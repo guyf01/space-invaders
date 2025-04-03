@@ -191,7 +191,6 @@ proc Draw
     mov al, [bp + 4]      ; Color of the pixel
     mov cx, [bp + 6]      ; X position
     mov dx, [bp + 8]      ; Y position
-    mov bh, 1             ; Video page
 
 	; execute BIOS interrupt
     mov ah, 0ch           ; BIOS interrupt for drawing a pixel
