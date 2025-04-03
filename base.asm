@@ -191,6 +191,7 @@ proc Draw
     mov cx, [bp + 6]      ; X position
     mov dx, [bp + 8]      ; Y position
     mov bh, 1             ; Video page
+
     mov ah, 0ch           ; BIOS interrupt for drawing a pixel
     int 10h               ; Call BIOS interrupt
 
