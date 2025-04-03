@@ -178,7 +178,7 @@ endp DrawModel
 
 proc draw_pixel
 ;--------------------------------------------------------
-; Purpose:    Draw a pixel on the screen using BIOS interrupt
+; Purpose:    Draw a pixel on the screen at a specified location.
 ; Inputs:     [BP+4] - Color of the pixel (passed via stack)
 ;             [BP+6] - X position (passed via stack)
 ;             [BP+8] - Y position (passed via stack)
