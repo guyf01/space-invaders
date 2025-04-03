@@ -195,7 +195,7 @@ proc Draw
     int 10h               ; Call BIOS interrupt
 
     pop bp
-    ret 6                 ; Clean up the stack and return
+    ret 6
 endp Draw
 
 
