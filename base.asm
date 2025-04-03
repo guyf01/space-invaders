@@ -176,18 +176,27 @@ Again:
 endp DrawModel
 
 
+;--------------------------------------------------------
+; Purpose:    Draw a pixel on the screen using BIOS interrupt
+; Inputs:     [BP+4] - Color of the pixel (passed via stack)
+;             [BP+6] - X position (passed via stack)
+;             [BP+8] - Y position (passed via stack)
+; Outputs:    None
+;--------------------------------------------------------
 proc Draw
-	push bp
-	mov bp, sp
+    push bp
+    mov bp, sp
 
-    mov ah, 0ch
-    mov al,[bp+4]
-    mov cx,[bp+6]
-    mov dx,[bp+8]
-    mov bh,1
-    int 10h
-	pop bp
-	ret 6
+    ; Set video mode to draw a pixel
+    mov ah, 0ch           ; BIOS interrupt for drawing a pixel
+    mov al, [bp + 4]      ; Color of the pixel
+    mov cx, [bp + 6]      ; X position
+    mov dx, [bp + 8]      ; Y position
+    mov bh, 1             ; Video page
+    int 10h               ; Call BIOS interrupt
+
+    pop bp
+    ret 6                 ; Clean up the stack and return
 endp Draw
 
 
