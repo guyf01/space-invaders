@@ -201,23 +201,36 @@ proc draw_pixel
 endp draw_pixel
 
 
-proc print
-	push bp
-	mov bp, sp
-	mov si, @data
-	mov es,si
-	mov al, 1 ;move curser to loc
-	mov bh, 0 ;page
-	mov bl, 00001111b ;color
-	
-	mov cx, [bp + 4] ; length
-	mov dx, [bp + 6] ;loction
-	mov ah, 13h 
-	mov bp, [bp + 8] ;msg
-	int 10h
-	pop bp
-	ret 6
-endp print
+proc print_string
+;--------------------------------------------------------
+; Purpose:    Print a string on the screen at a specified location.
+; Inputs:     [BP+4] - Length of the string (word, passed via stack).
+;             [BP+6] - Screen location (word, row and column packed into a single word, passed via stack).
+;             [BP+8] - Pointer to the string in the data segment to print (word, passed via stack).
+; Outputs:    None.
+;--------------------------------------------------------
+    push bp
+    mov bp, sp
+
+	; setup configurations from stack
+    mov cx, [bp + 4]       ; Length of the string to print
+    mov dx, [bp + 6]       ; Screen location (row and column packed into a single word)
+    mov bp, [bp + 8]       ; Pointer to the string to print
+    mov bl, 00001111b      ; Set BL to the text color (white on black background)
+    mov al, 1              ; Set AL to 1 (String is written and the cursor position is updated)
+
+    ; Load data segment for the string 
+    mov si, @data
+    mov es, si
+
+	; execute BIOS interrupt
+    mov ah, 13h            ; BIOS interrupt for printing a string
+    int 10h                ; Call BIOS interrupt
+
+    pop bp
+    ret 6
+endp print_string
+
 
 proc sound
 	push bp
@@ -581,15 +594,15 @@ start:
 	push offset ezmsg
 	push 409h
 	push 16
-	call print
+	call print_string
 	push offset medmsg
 	push 809h
 	push 18
-	call print
+	call print_string
 	push offset hardmsg
 	push 0c09h
 	push 16
-	call print
+	call print_string
 difficulty?:
 	mov ah, 1
     int 16h 
@@ -625,19 +638,19 @@ enddif:
 	push offset smsg
 	push 409h
 	push 20
-	call print
+	call print_string
 	push offset movinfo
 	push 809h
 	push 19
-	call print
+	call print_string
 	push offset shootinfo
 	push 0c09h
 	push 20
-	call print
+	call print_string
 	push offset wininfo
 	push 1008h
 	push 22
-	call print
+	call print_string
 	
 	
 start?:
@@ -692,7 +705,7 @@ noshot:
 	push offset owww
 	push 0101h
 	push 8
-	call print
+	call print_string
 	push [score]
 	call core
 	
@@ -776,13 +789,13 @@ win:
 	push offset e2msg
 	push 709h
 	push 18
-	call print
+	call print_string
 	jmp outO
 lose:
 	push offset e1msg
 	push 709h
 	push 19
-	call print
+	call print_string
 outO:
 	mov ah,2ch
     int 21h
