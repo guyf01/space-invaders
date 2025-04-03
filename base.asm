@@ -155,7 +155,7 @@ Again:
 	push ax
     push dx
     push [si]
-    call Draw
+    call draw_pixel
 	pop dx
 	pop ax
 
@@ -176,7 +176,7 @@ Again:
 endp DrawModel
 
 
-proc Draw
+proc draw_pixel
 ;--------------------------------------------------------
 ; Purpose:    Draw a pixel on the screen using BIOS interrupt
 ; Inputs:     [BP+4] - Color of the pixel (passed via stack)
@@ -198,7 +198,7 @@ proc Draw
 
     pop bp
     ret 6
-endp Draw
+endp draw_pixel
 
 
 proc print
