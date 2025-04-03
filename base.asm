@@ -187,13 +187,13 @@ proc Draw
     push bp
     mov bp, sp
 
-	; setup configuration for drawing a pixel
+	; setup configurations from stack
     mov al, [bp + 4]      ; Color of the pixel
     mov cx, [bp + 6]      ; X position
     mov dx, [bp + 8]      ; Y position
     mov bh, 1             ; Video page
 
-	; execute BIOS interrupt to draw the pixel
+	; execute BIOS interrupt
     mov ah, 0ch           ; BIOS interrupt for drawing a pixel
     int 10h               ; Call BIOS interrupt
 
