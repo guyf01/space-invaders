@@ -97,8 +97,8 @@ dead 			db 00,00,00,00,00,00,00,00,00,00,00,00,00
                 db 00,00,00,00,00,00,00,00,00,00,00,00,00
 				
 ;firing mode info--------------
-    x_mode equ 7
-    y_mode equ 10
+    projectile_width equ 7
+    projectile_hight equ 10
 	ammo_box dw 10 dup (0,0,0) 
 	ammo equ 60
 	caliber dw ? 
@@ -297,8 +297,8 @@ endp shotinfo
 
 
 proc lazers
-	push y_mode
-	push x_mode
+	push projectile_hight
+	push projectile_width
 	push offset Laser
 	add si, 2
 	push [si]
@@ -313,8 +313,8 @@ endp lazers
 
 
 proc missiles
-	push y_mode
-	push x_mode
+	push projectile_hight
+	push projectile_width
 	push offset missile
 	add si, 2
 	push [si]
@@ -329,8 +329,8 @@ endp missiles
 
 
 proc Deletep
-	push y_mode
-	push x_mode
+	push projectile_hight
+	push projectile_width
 	push offset delete_shot
 	xor dx,dx
 	mov [si], dx
