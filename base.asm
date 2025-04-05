@@ -22,7 +22,7 @@ stop db ?
 	e2msg db 'Game over, You Win'
 	wininfo db 'Score over 2000 to win'
 ;ship info-----------------
-    ship_spawnx dw 130
+    spaceship_curr_x dw 130
     ship_spawny dw 180
 	difclt dw 10
 
@@ -284,7 +284,7 @@ endp play_note
 
 proc shotinfo
 	add si, 2
-	mov dx, [ship_spawnx]
+	mov dx, [spaceship_curr_x]
 	add dx, 2
 	mov [si], dx
 	add si, 2
@@ -692,7 +692,7 @@ start?:
 	push y_ship
 	push x_ship
 	push offset Spaceship
-	push [ship_spawnx]
+	push [spaceship_curr_x]
 	push [ship_spawny]
 	call DrawModel
 	mov [caliber], offset ammo_box
@@ -738,13 +738,13 @@ inputloop:
 	
 	cmp al, 'a'
 	jne NotLeft
-	cmp [ship_spawnx], 20
+	cmp [spaceship_curr_x], 20
 	jbe NotLeft
-	sub [ship_spawnx],2 
+	sub [spaceship_curr_x],2 
 	push y_ship
 	push x_ship
 	push offset Spaceship
-	push [ship_spawnx]
+	push [spaceship_curr_x]
 	push [ship_spawny]
 	call DrawModel
 	jmp shots_annimation
@@ -752,13 +752,13 @@ inputloop:
 NotLeft:
 	cmp al, 'd'
 	jne NotRight
-	cmp [ship_spawnx], 280 
+	cmp [spaceship_curr_x], 280 
 	jae NotRight
-	add [ship_spawnx],2 
+	add [spaceship_curr_x],2 
 	push y_ship
 	push x_ship
 	push offset Spaceship
-	push [ship_spawnx]
+	push [spaceship_curr_x]
 	push [ship_spawny]
 	call DrawModel
 	jmp shots_annimation
