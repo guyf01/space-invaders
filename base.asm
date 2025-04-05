@@ -23,7 +23,7 @@ stop db ?
 	wininfo db 'Score over 2000 to win'
 ;ship info-----------------
     spaceship_curr_x dw 130
-    ship_spawny dw 180
+    spaceship_curr_y dw 180
 	difclt dw 10
 
     x_ship equ 12
@@ -288,7 +288,7 @@ proc shotinfo
 	add dx, 2
 	mov [si], dx
 	add si, 2
-	mov dx, [ship_spawny]
+	mov dx, [spaceship_curr_y]
 	sub dx, 12
 	mov [si], dx
 	add [caliber], 6
@@ -693,7 +693,7 @@ start?:
 	push x_ship
 	push offset Spaceship
 	push [spaceship_curr_x]
-	push [ship_spawny]
+	push [spaceship_curr_y]
 	call DrawModel
 	mov [caliber], offset ammo_box
 main:
@@ -745,7 +745,7 @@ inputloop:
 	push x_ship
 	push offset Spaceship
 	push [spaceship_curr_x]
-	push [ship_spawny]
+	push [spaceship_curr_y]
 	call DrawModel
 	jmp shots_annimation
 
@@ -759,7 +759,7 @@ NotLeft:
 	push x_ship
 	push offset Spaceship
 	push [spaceship_curr_x]
-	push [ship_spawny]
+	push [spaceship_curr_y]
 	call DrawModel
 	jmp shots_annimation
 	
