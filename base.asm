@@ -34,17 +34,17 @@ DATASEG
 
 	spaceship_width equ 12
 	spaceship_hight equ 10
-	Spaceship	db 00,00,00,00,00,00,02,00,00,00,00,00,00
-				db 00,00,00,00,00,02,02,02,00,00,00,00,00
-				db 00,00,00,00,00,02,00,02,00,00,00,00,00
-				db 00,00,00,00,00,02,00,02,00,00,00,00,00
-				db 00,00,00,00,00,02,02,02,00,00,00,00,00
-				db 00,00,00,02,00,02,02,02,00,02,00,00,00
-				db 00,00,02,02,02,02,02,02,02,02,02,00,00
-				db 00,00,02,02,02,02,02,02,02,02,02,00,00
-				db 00,00,02,02,02,02,02,02,02,02,02,00,00
-				db 00,00,02,02,00,02,02,02,00,02,02,00,00
-				db 00,00,00,00,00,00,02,00,00,00,00,00,00
+	spaceship_model		db 00,00,00,00,00,00,02,00,00,00,00,00,00
+						db 00,00,00,00,00,02,02,02,00,00,00,00,00
+						db 00,00,00,00,00,02,00,02,00,00,00,00,00
+						db 00,00,00,00,00,02,00,02,00,00,00,00,00
+						db 00,00,00,00,00,02,02,02,00,00,00,00,00
+						db 00,00,00,02,00,02,02,02,00,02,00,00,00
+						db 00,00,02,02,02,02,02,02,02,02,02,00,00
+						db 00,00,02,02,02,02,02,02,02,02,02,00,00
+						db 00,00,02,02,02,02,02,02,02,02,02,00,00
+						db 00,00,02,02,00,02,02,02,00,02,02,00,00
+						db 00,00,00,00,00,00,02,00,00,00,00,00,00
 ;------------------
 ; Enemy variables
 ;------------------
@@ -701,7 +701,7 @@ start?:
 	shipandammo:
 	push spaceship_hight
 	push spaceship_width
-	push offset Spaceship
+	push offset spaceship_model
 	push [spaceship_curr_x]
 	push [spaceship_curr_y]
 	call DrawModel
@@ -753,7 +753,7 @@ inputloop:
 	sub [spaceship_curr_x],2 
 	push spaceship_hight
 	push spaceship_width
-	push offset Spaceship
+	push offset spaceship_model
 	push [spaceship_curr_x]
 	push [spaceship_curr_y]
 	call DrawModel
@@ -767,7 +767,7 @@ NotLeft:
 	add [spaceship_curr_x],2 
 	push spaceship_hight
 	push spaceship_width
-	push offset Spaceship
+	push offset spaceship_model
 	push [spaceship_curr_x]
 	push [spaceship_curr_y]
 	call DrawModel
