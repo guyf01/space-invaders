@@ -49,7 +49,7 @@ DATASEG
 ; Enemy variables
 ;------------------
     enemy_width equ 12
-    y_Enemie equ 10
+    enemy_hight equ 10
 	deadcount dw 0
 	limit equ 144
 	side dw 1
@@ -437,7 +437,7 @@ proc enemie_annimtion
 	cmp  cx, 0
 	je enemie_dead
 	push ax
-	push y_Enemie
+	push enemy_hight
 	push enemy_width
 	push offset Enemie
 	add si,2
@@ -561,7 +561,7 @@ ycheck:
 	mov dx, [di]
 	cmp ax, dx
 	jb faily
-	add dx, y_Enemie
+	add dx, enemy_hight
 	cmp ax, dx
 	ja faily
 boom:
@@ -576,7 +576,7 @@ boom:
 	xor dx,dx
 	mov [di], dx
 	
-	push y_Enemie
+	push enemy_hight
 	push enemy_width
 	push offset dead
 	add di,2
