@@ -32,8 +32,8 @@ DATASEG
 	spaceship_curr_x dw 130
 	spaceship_curr_y dw 180
 
-	x_ship equ 12
-	y_ship equ 10
+	spaceship_width equ 12
+	spaceship_hight equ 10
 	Spaceship	db 00,00,00,00,00,00,02,00,00,00,00,00,00
 				db 00,00,00,00,00,02,02,02,00,00,00,00,00
 				db 00,00,00,00,00,02,00,02,00,00,00,00,00
@@ -699,8 +699,8 @@ start?:
 	mov ax, 0600h
 	int 10h
 	shipandammo:
-	push y_ship
-	push x_ship
+	push spaceship_hight
+	push spaceship_width
 	push offset Spaceship
 	push [spaceship_curr_x]
 	push [spaceship_curr_y]
@@ -751,8 +751,8 @@ inputloop:
 	cmp [spaceship_curr_x], 20
 	jbe NotLeft
 	sub [spaceship_curr_x],2 
-	push y_ship
-	push x_ship
+	push spaceship_hight
+	push spaceship_width
 	push offset Spaceship
 	push [spaceship_curr_x]
 	push [spaceship_curr_y]
@@ -765,8 +765,8 @@ NotLeft:
 	cmp [spaceship_curr_x], 280 
 	jae NotRight
 	add [spaceship_curr_x],2 
-	push y_ship
-	push x_ship
+	push spaceship_hight
+	push spaceship_width
 	push offset Spaceship
 	push [spaceship_curr_x]
 	push [spaceship_curr_y]
