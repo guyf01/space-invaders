@@ -15,7 +15,7 @@ DATASEG
 ; Game data
 ;------------------
 	score dw 0
-	missed_shot_score_penalty dw 10
+	missed_shot_score_penalty dw ?
 	score_msg db 'Score - '
 	ez_difficult_msg db 'for easy press 1'
 	medium_difficult_msg db 'for medium press 2'
