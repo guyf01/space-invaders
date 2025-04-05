@@ -15,17 +15,17 @@ DATASEG
 ; Game data
 ;------------------
 	score dw 0
+	missed_shot_score_penalty dw 10
 	score_msg db 'Score - '
-	ezmsg db 'for easy press 1'
-	medmsg db 'for medium press 2'
-	hardmsg db 'for hard press 3'
-	smsg db 'Press space to start'
-	movinfo db 'Press a & d to move'
-	shootinfo db 'Press e & q to shoot'
-	e1msg db 'Game over, You Lose'
-	e2msg db 'Game over, You Win'
-	wininfo db 'Score over 2000 to win'
-	difclt dw 10
+	ez_difficult_msg db 'for easy press 1'
+	medium_difficult_msg db 'for medium press 2'
+	hard_difficult_msg db 'for hard press 3'
+	start_guide_msg db 'Press space to start'
+	movement_guide_msg db 'Press a & d to move'
+	shooting_guide_msg db 'Press e & q to shoot'
+	win_criteria_msg db 'Score over 2000 to win'
+	game_lost_msg db 'Game over, You Lose'
+	game_won_msg db 'Game over, You Win'
 ; ------------------
 ; ship variables
 ; ------------------
@@ -509,7 +509,7 @@ Use_Missile:
 miss:
 	cmp [score], 0
 	jbe delete_bullet
-	mov cx, [difclt]
+	mov cx, [missed_shot_score_penalty]
 	sub [score], cx
 delete_bullet:
 	sub si, 4
@@ -619,15 +619,15 @@ start:
     mov ax, 0013h
     int 10h
 ;difficulty select 
-	push offset ezmsg
+	push offset ez_difficult_msg
 	push 409h
 	push 16
 	call print_string
-	push offset medmsg
+	push offset medium_difficult_msg
 	push 809h
 	push 18
 	call print_string
-	push offset hardmsg
+	push offset hard_difficult_msg
 	push 0c09h
 	push 16
 	call print_string
@@ -646,13 +646,13 @@ difficulty?:
 	je hard
 	jmp difficulty?
 easy:
-	mov [difclt], 10
+	mov [missed_shot_score_penalty], 10
 	jmp enddif
 med1um:
-	mov [difclt], 50
+	mov [missed_shot_score_penalty], 50
 	jmp enddif
 hard:
-	mov [difclt], 100
+	mov [missed_shot_score_penalty], 100
 	jmp enddif
 enddif:
 	mov ax,0600h    
@@ -663,19 +663,19 @@ enddif:
 	mov ax, 0600h
 	int 10h
 ;starting page
-	push offset smsg
+	push offset start_guide_msg
 	push 409h
 	push 20
 	call print_string
-	push offset movinfo
+	push offset movement_guide_msg
 	push 809h
 	push 19
 	call print_string
-	push offset shootinfo
+	push offset shooting_guide_msg
 	push 0c09h
 	push 20
 	call print_string
-	push offset wininfo
+	push offset win_criteria_msg
 	push 1008h
 	push 22
 	call print_string
@@ -814,13 +814,13 @@ victoycheck:
 win:
 	cmp [score], 2000
 	jb lose
-	push offset e2msg
+	push offset game_won_msg
 	push 709h
 	push 18
 	call print_string
 	jmp outO
 lose:
-	push offset e1msg
+	push offset game_lost_msg
 	push 709h
 	push 19
 	call print_string
