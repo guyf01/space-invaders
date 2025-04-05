@@ -8,7 +8,6 @@ note1 dw 1436h
 note2 dw 1917h 
 note3 dw 2873h 
 note4 dw 2559h
-timesound db ?
 stop db ?
 ;screens & scores
 	score dw 0
@@ -219,7 +218,7 @@ proc print_string
     mov bl, 00001111b      ; Set BL to the text color (white on black background)
     mov al, 1              ; Set AL to 1 (String is written and the cursor position is updated)
 
-    ; Load data segment for the string 
+    ; Load data segment for the string
     mov si, @data
     mov es, si
 
@@ -232,38 +231,57 @@ proc print_string
 endp print_string
 
 
-proc sound
-	push bp
-	mov bp,sp
-; open speaker
-	in al, 61h
-	or al, 00000011b
-	out 61h, al
-; send control word to change frequency
-	mov al, 0B6h
-	out 43h, al
-; play frequency 131Hz
-	mov ax, [bp + 4]
-	out 42h, al ; Sending lower byte
-	mov al, ah
-	out 42h, al ; Sending upper byte
-	mov ah,2ch
-    int 21h
-    mov [timesound],dl
-wait1:
-	mov ah,2ch
-    int 21h
-    cmp [timesound],dl
-    je wait1
+proc play_note
+;--------------------------------------------------------
+; Purpose:    Play a musical note at a specified frequency for a short duration.
+; Inputs:     
+;             [BP+4] - Frequency of the note in Hz (word, passed via stack).
+; Behavior:   
+;             - Activates the PC speaker.
+;             - Configures the Programmable Interval Timer (PIT) to generate the specified frequency.
+;             - Waits for a short duration using the system clock.
+;             - Deactivates the PC speaker after the note is played.
+; Outputs:    None.
+;--------------------------------------------------------
+    push bp                ; Save the base pointer
+    mov bp, sp             ; Set up the stack frame
 
-	; close the speaker
-	in al, 61h
-	and al, 11111100b
-	out 61h, al
-	pop bp
-	ret 2
-endp sound
-;---------------------------------------------
+    ; Open the PC speaker
+    in al, 61h             ; Read the current state of the speaker control port
+    or al, 3               ; Set bits 0 and 1 to enable the speaker
+    out 61h, al            ; Write the updated state back to the speaker control port
+
+    ; Send control word to the PIT to set the frequency
+    mov al, 0B6h           ; Control word for PIT channel 2 in square wave mode
+    out 43h, al            ; Send the control word to the PIT control port
+
+    ; Send the frequency to the PIT
+    mov ax, [bp + 4]       ; Load the frequency from the stack into AX
+    out 42h, al            ; Send the lower byte of the frequency to the PIT data port
+    mov al, ah             ; Move the upper byte of the frequency into AL
+    out 42h, al            ; Send the upper byte of the frequency to the PIT data port
+	
+    ; Wait for a short duration using the system clock
+    mov ah, 2Ch            ; Function 2Ch: Get system time
+    int 21h                ; Call DOS interrupt to get the current time
+    mov bl, dl             ; Store the current time (hundredths of a second) in BL
+
+retry_time:
+    mov ah, 2Ch            ; Function 2Ch: Get system time
+    int 21h                ; Call DOS interrupt to get the current time
+    cmp bl, dl             ; Compare the stored time with the current time
+    je retry_time          ; If the time hasn't changed, keep waiting
+
+    ; Close the PC speaker
+    in al, 61h             ; Read the current state of the speaker control port
+    and al, 0FCh           ; Clear bits 0 and 1 to disable the speaker
+    out 61h, al            ; Write the updated state back to the speaker control port
+
+    pop bp                 ; Restore the base pointer
+    ret 2                  ; Clean up the stack and return
+endp play_note
+
+
 proc shotinfo
 	add si, 2
 	mov dx, [ship_spawnx]
@@ -585,7 +603,7 @@ fail:
 endp checkhit
 
 start:
-    mov ax,@data
+    mov ax, @data
     mov ds, ax
 	
     mov ax, 0013h
@@ -824,7 +842,7 @@ fournote:
 	push [note4]
 	jmp callsound
 callsound:
-	call sound
+	call play_note
 	inc [cn]
 endsound:
 	mov ah,2ch
