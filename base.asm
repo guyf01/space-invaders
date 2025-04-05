@@ -15,7 +15,7 @@ DATASEG
 ; Game data
 ;------------------
 	score dw 0
-	owww db 'Score - '
+	score_msg db 'Score - '
 	ezmsg db 'for easy press 1'
 	medmsg db 'for medium press 2'
 	hardmsg db 'for hard press 3'
@@ -730,7 +730,7 @@ shots_annimation:
     int 21h
     mov [time], dl
 noshot:
-	push offset owww
+	push offset score_msg
 	push 0101h
 	push 8
 	call print_string
