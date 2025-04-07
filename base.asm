@@ -108,9 +108,9 @@ DATASEG
 ; ------------------
     projectile_width equ 7
     projectile_hight equ 10
-	ammo_box dw 10 dup (0,0,0) 
-	ammo equ 60
-	caliber dw ? 
+	active_projectiles dw 10 dup (0,0,0) 
+	max_active_projectiles equ 60
+	active_projectiles_next_slot dw offset active_projectiles
 	time db 5
 	ticks_since_last_projectile_registration dw 0
 	minimum_ticks_between_projectiles dw 9
@@ -297,44 +297,58 @@ endp play_note
 
 proc register_projectile
 ;--------------------------------------------------------
-; Purpose:    Registers a projectile into the ammo box.
+; Purpose:    Registers a projectile into the active_projectiles array.
 ; Inputs:     
 ;             [BP + 4] - The ID of the projectile.
 ; Behavior:   
-;             - Retrieves the current position of the spaceship.
-;             - Records the projectile's ID and its initial position 
-;               (adjusted relative to the spaceship's position) in the ammo box.
-;             - Updates the `caliber` pointer to point to the next available slot 
-;               in the ammo box.
-; Outputs:    None.
+;             - Checks if enough time has passed since the last projectile was registered.
+;             - Adds the projectile's ID, X position, and Y position to the 
+;               `active_projectiles` array.
+;             - Updates the `active_projectiles_next_slot` pointer to the next available slot.
+; Outputs:    
+;             - Updates the `active_projectiles` array with the new projectile's data.
+;             - Resets the `ticks_since_last_projectile_registration` counter.
 ;--------------------------------------------------------
     push bp
     mov bp, sp
 
-	mov ax, [ticks_since_last_projectile_registration]
-	cmp ax, [minimum_ticks_between_projectiles]
-	jb end_projectile_registration
+    ; Check if enough time has passed since the last projectile
+    mov ax, [ticks_since_last_projectile_registration]
+    cmp ax, [minimum_ticks_between_projectiles]
+    jb end_projectile_registration ; Exit if not enough time has passed
 
-    ; Set up the projectile's position in the ammo box
-    mov si, [caliber]          ; Load the current position of the ammo box pointer
+    ; Load the next available slot in the active_projectiles array
+    mov si, [active_projectiles_next_slot]
+    sub si, offset active_projectiles
+    cmp si, max_active_projectiles
+    jb within_bounds
+    ; Reset to the start of the array if the end is reached
+    mov [active_projectiles_next_slot], offset active_projectiles
+within_bounds:
 
-	mov dx, [bp + 4]           ; Get the projectile ID from the stack
-    mov [si], dx        	   ; Store the projectile ID in the ammo box
+    mov si, [active_projectiles_next_slot]
 
-    add si, 2                  ; Move to the next slot in the ammo box
+    ; Store the projectile ID in the array
+    mov dx, [bp + 4]           ; Get the projectile ID from the stack
+    mov [si], dx               ; Store the projectile ID in the array
 
+    ; Store the X position of the projectile
+    add si, 2                  ; Move to the next slot
     mov dx, [spaceship_curr_x] ; Get the spaceship's current X position
     add dx, 2                  ; Adjust the X position for the projectile
-    mov [si], dx               ; Store the adjusted X position in the ammo box
+    mov [si], dx               ; Store the adjusted X position in the array
 
-    add si, 2                  ; Move to the next slot in the ammo box
-
+    ; Store the Y position of the projectile
+    add si, 2                  ; Move to the next slot
     mov dx, [spaceship_curr_y] ; Get the spaceship's current Y position
     sub dx, 12                 ; Adjust the Y position for the projectile
-    mov [si], dx               ; Store the adjusted Y position in the ammo box
+    mov [si], dx               ; Store the adjusted Y position in the array
 
-    add [caliber], 6           ; Advance the `caliber` pointer to the next available slot
-	mov [ticks_since_last_projectile_registration], 0	   ; Reset the shot stopper to allow shooting again
+    ; Update the next available slot pointer
+    add [active_projectiles_next_slot], 6
+
+    ; Reset the ticks counter
+    mov [ticks_since_last_projectile_registration], 0
 
 end_projectile_registration:
     pop bp
@@ -511,7 +525,7 @@ endp enemie_annimtion
 proc shot_annimtion
 	push bp
 	mov bp, sp
-	mov ax, offset ammo_box
+	mov ax, offset active_projectiles
 @@cycle:
 	mov si, ax
 	push ax
@@ -554,8 +568,8 @@ no_bullet:
 	pop ax
 	add ax, 6
 	mov si, ax
-	sub si, offset ammo_box
-	cmp si, ammo
+	sub si, offset active_projectiles
+	cmp si, max_active_projectiles
 	jb @@cycle 
 	pop bp
 	ret 
@@ -565,7 +579,7 @@ endp shot_annimtion
 proc checkhit
 	push bp
 	mov bp, sp
-	mov si, offset ammo_box
+	mov si, offset active_projectiles
 	mov di, offset enemies_num
 xcheck:	
 	xor dx, dx
@@ -632,10 +646,10 @@ faily:
 next:
 	add si, 6
 	mov dx, si
-	sub dx, offset ammo_box
-	cmp dx, ammo
+	sub dx, offset active_projectiles
+	cmp dx, max_active_projectiles
 	jb jump_shortcut
-	mov si, offset ammo_box
+	mov si, offset active_projectiles
 	add di, 6
 	mov dx, di
 	sub dx, offset enemies_num
@@ -741,14 +755,6 @@ start?:
 	push [spaceship_curr_x]
 	push [spaceship_curr_y]
 	call DrawModel
-	mov [caliber], offset ammo_box
-main:
-;ammo box check
-	mov si, [caliber]
-	sub si, offset ammo_box
-	cmp si, ammo
-	jb shots_annimation
-	mov [caliber], offset ammo_box
 shots_annimation:  
     mov ah,2ch
     int 21h
@@ -815,14 +821,14 @@ NotRight:
 
 	push [missile_id]
 	call register_projectile
-	jmp main
+	jmp shots_annimation
 NotMissile:
 	cmp al, 'e'
 	jne NotLaser
 	
 	push [laser_id]
 	call register_projectile
-	jmp	main
+	jmp	shots_annimation
 NotLaser:
 	cmp al, 'p'
 	jne exitoffrange
