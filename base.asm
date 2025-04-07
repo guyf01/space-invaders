@@ -112,7 +112,8 @@ DATASEG
 	ammo equ 60
 	caliber dw ? 
 	time db 5
-	shot_stopper dw 0
+	ticks_since_last_projectile_registration dw 0
+	minimum_ticks_between_projectiles dw 9
 
 	laser_id dw 1
 	laser_model		    db 00,00,00,00,15,00,00,00
@@ -310,6 +311,10 @@ proc register_projectile
     push bp
     mov bp, sp
 
+	mov ax, [ticks_since_last_projectile_registration]
+	cmp ax, [minimum_ticks_between_projectiles]
+	jb end_projectile_registration
+
     ; Set up the projectile's position in the ammo box
     mov si, [caliber]          ; Load the current position of the ammo box pointer
 
@@ -329,7 +334,9 @@ proc register_projectile
     mov [si], dx               ; Store the adjusted Y position in the ammo box
 
     add [caliber], 6           ; Advance the `caliber` pointer to the next available slot
+	mov [ticks_since_last_projectile_registration], 0	   ; Reset the shot stopper to allow shooting again
 
+end_projectile_registration:
     pop bp
     ret 2                      ; Clean up the stack and return
 endp register_projectile
@@ -748,7 +755,7 @@ shots_annimation:
     cmp [time],dl
     je noshot
 	
-	inc [shot_stopper]
+	inc [ticks_since_last_projectile_registration]
 	
 	call shot_annimtion
 	call enemie_annimtion
@@ -806,23 +813,15 @@ NotRight:
 	cmp al, 'q'
 	jne NotMissile
 
-	cmp [shot_stopper], 9
-	jb NotMissile
-
 	push [missile_id]
 	call register_projectile
-	mov [shot_stopper], 0
 	jmp main
 NotMissile:
 	cmp al, 'e'
 	jne NotLaser
 	
-	cmp [shot_stopper], 9
-	jb NotLaser	
-	
 	push [laser_id]
 	call register_projectile
-	mov [shot_stopper], 0
 	jmp	main
 NotLaser:
 	cmp al, 'p'
