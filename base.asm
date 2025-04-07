@@ -114,41 +114,43 @@ DATASEG
 	time db 5
 	shot_stopper dw 0
 
-	Missile		db 00,00,00,03,03,00,00,00
-                db 00,00,00,08,08,00,00,00
-                db 00,00,00,03,03,00,00,00
-                db 00,00,00,03,03,00,00,00
-				db 00,00,00,08,08,00,00,00
-                db 00,00,03,03,03,03,00,00
-				db 00,03,03,03,03,03,03,00
-				db 00,03,03,00,00,03,03,00
-                db 00,03,00,00,00,00,03,00
-				db 00,00,00,00,00,00,00,00
-				db 00,00,00,00,00,00,00,00
+	laser_id dw 1
+	laser_model		    db 00,00,00,00,15,00,00,00
+						db 00,00,00,15,12,15,00,00
+						db 00,00,00,15,12,15,00,00
+						db 00,00,00,15,12,15,00,00
+						db 00,00,00,15,12,15,00,00
+						db 00,00,00,15,12,15,00,00
+						db 00,00,00,15,12,15,00,00
+						db 00,00,00,00,15,00,00,00
+						db 00,00,00,00,00,00,00,00
+						db 00,00,00,00,00,00,00,00
+						db 00,00,00,00,00,00,00,00
 
-	Laser		db 00,00,00,00,15,00,00,00
-                db 00,00,00,15,12,15,00,00
-                db 00,00,00,15,12,15,00,00
-                db 00,00,00,15,12,15,00,00
-				db 00,00,00,15,12,15,00,00
-                db 00,00,00,15,12,15,00,00
-				db 00,00,00,15,12,15,00,00
-				db 00,00,00,00,15,00,00,00
-                db 00,00,00,00,00,00,00,00
-				db 00,00,00,00,00,00,00,00
-				db 00,00,00,00,00,00,00,00
+	missile_id dw 2
+	missile_model		db 00,00,00,03,03,00,00,00
+						db 00,00,00,08,08,00,00,00
+						db 00,00,00,03,03,00,00,00
+						db 00,00,00,03,03,00,00,00
+						db 00,00,00,08,08,00,00,00
+						db 00,00,03,03,03,03,00,00
+						db 00,03,03,03,03,03,03,00
+						db 00,03,03,00,00,03,03,00
+						db 00,03,00,00,00,00,03,00
+						db 00,00,00,00,00,00,00,00
+						db 00,00,00,00,00,00,00,00
 				
-	delete_shot	db 00,00,00,00,00,00,00,00
-                db 00,00,00,00,00,00,00,00
-                db 00,00,00,00,00,00,00,00
-                db 00,00,00,00,00,00,00,00
-				db 00,00,00,00,00,00,00,00
-                db 00,00,00,00,00,00,00,00
-				db 00,00,00,00,00,00,00,00
-				db 00,00,00,00,00,00,00,00
-                db 00,00,00,00,00,00,00,00
-				db 00,00,00,00,00,00,00,00
-				db 00,00,00,00,00,00,00,00
+	delete_shot			db 00,00,00,00,00,00,00,00
+						db 00,00,00,00,00,00,00,00
+						db 00,00,00,00,00,00,00,00
+						db 00,00,00,00,00,00,00,00
+						db 00,00,00,00,00,00,00,00
+						db 00,00,00,00,00,00,00,00
+						db 00,00,00,00,00,00,00,00
+						db 00,00,00,00,00,00,00,00
+						db 00,00,00,00,00,00,00,00
+						db 00,00,00,00,00,00,00,00
+						db 00,00,00,00,00,00,00,00
 
 CODESEG
 proc DrawModel
@@ -292,24 +294,51 @@ retry_time:
 endp play_note
 
 
-proc shotinfo
-	add si, 2
-	mov dx, [spaceship_curr_x]
-	add dx, 2
-	mov [si], dx
-	add si, 2
-	mov dx, [spaceship_curr_y]
-	sub dx, 12
-	mov [si], dx
-	add [caliber], 6
-	ret
-endp shotinfo
+proc register_projectile
+;--------------------------------------------------------
+; Purpose:    Registers a projectile into the ammo box.
+; Inputs:     
+;             [BP + 4] - The ID of the projectile.
+; Behavior:   
+;             - Retrieves the current position of the spaceship.
+;             - Records the projectile's ID and its initial position 
+;               (adjusted relative to the spaceship's position) in the ammo box.
+;             - Updates the `caliber` pointer to point to the next available slot 
+;               in the ammo box.
+; Outputs:    None.
+;--------------------------------------------------------
+    push bp
+    mov bp, sp
+
+    ; Set up the projectile's position in the ammo box
+    mov si, [caliber]          ; Load the current position of the ammo box pointer
+
+	mov dx, [bp + 4]           ; Get the projectile ID from the stack
+    mov [si], dx        	   ; Store the projectile ID in the ammo box
+
+    add si, 2                  ; Move to the next slot in the ammo box
+
+    mov dx, [spaceship_curr_x] ; Get the spaceship's current X position
+    add dx, 2                  ; Adjust the X position for the projectile
+    mov [si], dx               ; Store the adjusted X position in the ammo box
+
+    add si, 2                  ; Move to the next slot in the ammo box
+
+    mov dx, [spaceship_curr_y] ; Get the spaceship's current Y position
+    sub dx, 12                 ; Adjust the Y position for the projectile
+    mov [si], dx               ; Store the adjusted Y position in the ammo box
+
+    add [caliber], 6           ; Advance the `caliber` pointer to the next available slot
+
+    pop bp
+    ret 2                      ; Clean up the stack and return
+endp register_projectile
 
 
 proc lazers
 	push projectile_hight
 	push projectile_width
-	push offset Laser
+	push offset laser_model
 	add si, 2
 	push [si]
 	add si, 2
@@ -325,7 +354,7 @@ endp lazers
 proc missiles
 	push projectile_hight
 	push projectile_width
-	push offset missile
+	push offset missile_model
 	add si, 2
 	push [si]
 	add si, 2
@@ -776,27 +805,23 @@ NotLeft:
 NotRight:
 	cmp al, 'q'
 	jne NotMissile
-	mov si,[caliber]
-	
+
 	cmp [shot_stopper], 9
 	jb NotMissile
-	
-	mov dx, 2
-	mov [si], dx
-	call shotinfo
+
+	push [missile_id]
+	call register_projectile
 	mov [shot_stopper], 0
 	jmp main
 NotMissile:
 	cmp al, 'e'
 	jne NotLaser
-	mov si,[caliber]
 	
 	cmp [shot_stopper], 9
 	jb NotLaser	
 	
-	mov dx, 1
-	mov [si], dx
-	call shotinfo
+	push [laser_id]
+	call register_projectile
 	mov [shot_stopper], 0
 	jmp	main
 NotLaser:
