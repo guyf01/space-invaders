@@ -319,17 +319,17 @@ proc register_projectile
     ; Check if enough time has passed since the last projectile
     mov ax, [ticks_since_last_projectile_registration]
     cmp ax, [minimum_ticks_between_projectiles]
-    jb end_projectile_registration ; Exit if not enough time has passed
+    jb @@exit ; Exit if not enough time has passed
 
     ; Load the next available slot in the active_projectiles array
     mov ax, [active_projectiles_next_slot]
     sub ax, offset active_projectiles
     cmp ax, max_active_projectiles
-    jb within_bounds
+    jb @@register
     ; Reset to the start of the array if the end is reached
     mov [active_projectiles_next_slot], offset active_projectiles
-within_bounds:
 
+@@register:
     mov si, [active_projectiles_next_slot]
 
     ; Store the projectile ID in the array
@@ -352,7 +352,7 @@ within_bounds:
     ; Reset the ticks counter
     mov [ticks_since_last_projectile_registration], 0
 
-end_projectile_registration:
+@@exit:
     pop bp
     ret 2                      ; Clean up the stack and return
 endp register_projectile
@@ -388,31 +388,31 @@ proc animate_projectile
     mov dx, [si]           ; Load the projectile ID
 
     cmp dx, [delete_projectile_id] ; Check if the projectile is marked for deletion
-    je delete
+    je @@delete
 
     cmp dx, [laser_id]     ; Check if the projectile is a laser
-    je laser
+    je @@laser
 
     cmp dx, [missile_id]   ; Check if the projectile is a missile
-    je missile
+    je @@missile
 
-    jmp animate_end        ; Skip to the end if no match found
+    jmp @@exit        ; Skip to the end if no match found
 
-delete:
+@@delete:
     mov ax, [no_projectile_id] ; Mark the projectile as inactive
     mov [si], ax
     mov cx, offset delete_projectile_model ; Load the deletion model
-    jmp animate             ; Proceed to animate the deletion
+    jmp @@animate             ; Proceed to animate the deletion
 
-laser:
+@@laser:
     mov cx, offset laser_model ; Load the laser model
-    jmp animate
+    jmp @@animate
 
-missile:
+@@missile:
     mov cx, offset missile_model ; Load the missile model
-    jmp animate
+    jmp @@animate
 
-animate:
+@@animate:
     mov dx, projectile_tick_movement ; Load the movement step
     sub [si + 4], dx           ; Update the Y position (move upward)
 
@@ -425,7 +425,7 @@ animate:
 
     call DrawModel             ; Call the procedure to redraw the projectile
 
-animate_end:
+@@exit:
     pop bp                     ; Restore the base pointer
     ret 2                      ; Clean up the stack and return
 endp animate_projectile
@@ -459,23 +459,23 @@ proc projectile_hit_check
 
     ; Check if the projectile is a laser or missile
     cmp dx, [laser_id]
-    je check_ceiling
+    je @@check_ceiling
 
     cmp dx, [missile_id]
-    je check_ceiling
+    je @@check_ceiling
 
     ; If not a laser or missile, skip to the end
-    jmp hit_check_end
+    jmp @@exit
 
-check_ceiling:
+@@check_ceiling:
     ; Check if the projectile has hit the ceiling
     mov dx, 0
     cmp [si + 4], dx       ; Compare Y position with 0 (ceiling)
-    ja hit_check_end       ; If below the ceiling, skip
+    ja @@exit       ; If below the ceiling, skip
 
     ; Penalize score if the projectile missed
     cmp [score], 0
-    jbe hit_check_end      ; Skip if score is already 0 or negative
+    jbe @@exit      ; Skip if score is already 0 or negative
     mov dx, [missed_shot_score_penalty]
     sub [score], dx        ; Deduct penalty from score
 
@@ -483,7 +483,7 @@ check_ceiling:
     mov dx, [delete_projectile_id]
     mov [si], dx
 
-hit_check_end:
+@@exit:
     pop bp                 ; Restore the base pointer
     ret 2                  ; Clean up the stack and return
 endp projectile_hit_check
@@ -509,7 +509,7 @@ proc projectiles_handler
 	push bp                ; Save the base pointer
     mov bp, offset active_projectiles ; Start of the `active_projectiles` array
 
-projectile_loop:
+@@projectile_loop:
     push bp
     call projectile_hit_check         ; Check if the projectile hit the ceiling or missed
     push bp
@@ -519,7 +519,7 @@ projectile_loop:
     mov ax, bp
     sub ax, offset active_projectiles ; Calculate the offset from the start of the array
     cmp ax, max_active_projectiles    ; Check if we've reached the end of the array
-    jb projectile_loop                ; Continue looping if not at the end
+    jb @@projectile_loop                ; Continue looping if not at the end
 
 	pop bp
     ret                               ; Return when all projectiles are processed
@@ -559,9 +559,9 @@ proc display_score
     mov ax, [score]        ; Load the score into AX
     xor cx, cx             ; Clear CX (digit counter)
 
-find_digits:
+@@find_digits:
     cmp ax, 0              ; Check if the score division result is 0
-    je zero_fill           ; If 0, jump to zero-padding logic
+    je @@zero_fill           ; If 0, jump to zero-padding logic
 
     xor dx, dx             ; Clear DX (remainder)
     mov bx, 10             ; Set divisor to 10
@@ -569,18 +569,18 @@ find_digits:
 
     push dx                ; Push the remainder (digit) onto the stack
     inc cx                 ; Increment the digit counter
-    jmp find_digits        ; Repeat until the score is fully converted
+    jmp @@find_digits        ; Repeat until the score is fully converted
 
-zero_fill:
+@@zero_fill:
     cmp cx, 4              ; Check if the score has at least 4 digits
-    jae print_digits       ; If yes, jump to printing digits
+    jae @@print_digits       ; If yes, jump to printing digits
     push 0                 ; Push a zero onto the stack
     inc cx                 ; Increment the digit counter
-    jmp zero_fill          ; Repeat until 4 digits are reached
+    jmp @@zero_fill          ; Repeat until 4 digits are reached
 
-print_digits:
+@@print_digits:
     cmp cx, 0              ; Check if there are digits to print
-    je end_print           ; If no digits, finish
+    je @@exit           ; If no digits, finish
 
     pop dx                 ; Pop the next digit from the stack
     add dx, 48             ; Convert the digit to its ASCII representation
@@ -589,9 +589,9 @@ print_digits:
     int 21h                ; Call BIOS interrupt
 
     dec cx                 ; Decrement the digit counter
-    jmp print_digits       ; Repeat until all digits are printed
+    jmp @@print_digits       ; Repeat until all digits are printed
 
-end_print:
+@@exit:
     pop bp                 ; Restore the base pointer
     ret                    ; Return from the procedure
 endp display_score
