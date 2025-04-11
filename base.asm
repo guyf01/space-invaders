@@ -33,7 +33,7 @@ DATASEG
 	spaceship_curr_y dw 180
 
 	spaceship_width equ 12
-	spaceship_hight equ 10
+	spaceship_height equ 10
 	spaceship_model		db 00,00,00,00,00,00,02,00,00,00,00,00,00
 						db 00,00,00,00,00,02,02,02,00,00,00,00,00
 						db 00,00,00,00,00,02,00,02,00,00,00,00,00
@@ -49,7 +49,7 @@ DATASEG
 ; Enemy variables
 ;------------------
     enemy_width equ 12
-    enemy_hight equ 10
+    enemy_height equ 10
 	deadcount dw 0
 	limit equ 144
 	side dw 1
@@ -107,7 +107,7 @@ DATASEG
 ; projectile variables
 ; ------------------
     projectile_width equ 7
-    projectile_hight equ 10
+    projectile_height equ 10
 	active_projectiles dw 10 dup (0,0,0) 
 	max_active_projectiles equ 60
 	active_projectiles_next_slot dw offset active_projectiles
@@ -417,7 +417,7 @@ animate:
     sub [si + 4], dx           ; Update the Y position (move upward)
 
     ; Push projectile dimensions and model to the stack
-    push projectile_hight      ; Height of the projectile
+    push projectile_height      ; Height of the projectile
     push projectile_width      ; Width of the projectile
     push cx                    ; Pointer to the projectile's model
     push [si + 2]              ; Push the X position onto the stack
@@ -611,7 +611,7 @@ proc enemie_annimtion
 	cmp  cx, 0
 	je enemie_dead
 	push ax
-	push enemy_hight
+	push enemy_height
 	push enemy_width
 	push offset Enemie
 	add si,2
@@ -681,7 +681,7 @@ ycheck:
 	mov dx, [di]
 	cmp ax, dx
 	jb faily
-	add dx, enemy_hight
+	add dx, enemy_height
 	cmp ax, dx
 	ja faily
 boom:
@@ -695,7 +695,7 @@ boom:
 	xor dx,dx
 	mov [di], dx
 	
-	push enemy_hight
+	push enemy_height
 	push enemy_width
 	push offset dead
 	add di,2
@@ -818,7 +818,7 @@ start?:
 	mov ax, 0600h
 	int 10h
 	shipandammo:
-	push spaceship_hight
+	push spaceship_height
 	push spaceship_width
 	push offset spaceship_model
 	push [spaceship_curr_x]
@@ -862,7 +862,7 @@ inputloop:
 	cmp [spaceship_curr_x], 20
 	jbe NotLeft
 	sub [spaceship_curr_x],2 
-	push spaceship_hight
+	push spaceship_height
 	push spaceship_width
 	push offset spaceship_model
 	push [spaceship_curr_x]
@@ -876,7 +876,7 @@ NotLeft:
 	cmp [spaceship_curr_x], 280 
 	jae NotRight
 	add [spaceship_curr_x],2 
-	push spaceship_hight
+	push spaceship_height
 	push spaceship_width
 	push offset spaceship_model
 	push [spaceship_curr_x]
