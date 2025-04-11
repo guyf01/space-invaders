@@ -526,39 +526,75 @@ projectile_loop:
 endp projectiles_handler
 
 
-proc core
-	push bp
-	mov bp, sp
-	mov ax, [bp + 4] 
-	xor cx, cx
-	remaking: 
-		xor dx,dx 
-        cmp ax,0 
-        je zerocheck       
-        mov bx,10         
-        div bx                   
-        push dx               
-        inc cx               
-        jmp remaking 
-	zerocheck:
-		cmp cx, 4
-		jae printing
-		push dx
-		add cx, 1
-		jmp zerocheck
-	printing:
-        cmp cx,0 
-        je finished
-        pop dx 
-        add dx,48 
-        mov ah,02h 
-        int 21h 
-        dec cx 
-        jmp printing
-	finished:
-	pop bp
-	ret 2
-endp core
+proc display_score
+;--------------------------------------------------------
+; Purpose:    
+;             Displays the player's current score on the screen.
+; Inputs:     
+;             None (uses the `score` variable from the data segment).
+; Behavior:   
+;             - Prints a "Score -" message on the screen.
+;             - Converts the `score` value into its decimal representation.
+;             - Pads the score with leading zeros to ensure it is at least 4 digits long.
+;             - Prints the score digits one by one on the screen.
+; Outputs:    
+;             - Displays the "Score -" message followed by the player's score.
+; Assumptions:
+;             - The `score` variable is a positive integer.
+;             - Uses BIOS interrupt 21h (function 02h) to print characters.
+; Notes:
+;             - The procedure does not handle negative scores.
+;             - The score will always be displayed as a 4-digit number, padded with leading zeros if necessary.
+;--------------------------------------------------------
+    push bp                ; Save the base pointer
+    mov bp, sp             ; Set up the stack frame
+
+    ; Print the "Score -" message
+    push offset score_msg  ; Address of the "Score -" message
+    push 0101h             ; Screen position (row 1, column 1)
+    push 8                 ; Length of the message
+    call print_string      ; Call the print_string procedure
+
+    ; Load the score into AX and clear CX (digit counter)
+    mov ax, [score]        ; Load the score into AX
+    xor cx, cx             ; Clear CX (digit counter)
+
+find_digits:
+    cmp ax, 0              ; Check if the score division result is 0
+    je zero_fill           ; If 0, jump to zero-padding logic
+
+    xor dx, dx             ; Clear DX (remainder)
+    mov bx, 10             ; Set divisor to 10
+    div bx                 ; Divide AX by BX (result in AX, remainder in DX)
+
+    push dx                ; Push the remainder (digit) onto the stack
+    inc cx                 ; Increment the digit counter
+    jmp find_digits        ; Repeat until the score is fully converted
+
+zero_fill:
+    cmp cx, 4              ; Check if the score has at least 4 digits
+    jae print_digits       ; If yes, jump to printing digits
+    push 0                 ; Push a zero onto the stack
+    inc cx                 ; Increment the digit counter
+    jmp zero_fill          ; Repeat until 4 digits are reached
+
+print_digits:
+    cmp cx, 0              ; Check if there are digits to print
+    je end_print           ; If no digits, finish
+
+    pop dx                 ; Pop the next digit from the stack
+    add dx, 48             ; Convert the digit to its ASCII representation
+
+    mov ah, 02h            ; BIOS interrupt to print a character
+    int 21h                ; Call BIOS interrupt
+
+    dec cx                 ; Decrement the digit counter
+    jmp print_digits       ; Repeat until all digits are printed
+
+end_print:
+    pop bp                 ; Restore the base pointer
+    ret                    ; Return from the procedure
+endp display_score
 
 
 proc echeck ;checks if the enemy touched the corners
@@ -841,13 +877,7 @@ shots_annimation:
     int 21h
     mov [time], dl
 noshot:
-	push offset score_msg
-	push 0101h
-	push 8
-	call print_string
-	push [score]
-	call core
-	
+	call display_score
 	jmp victoycheck
 inputloop:
 	mov ah, 1
