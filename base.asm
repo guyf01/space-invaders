@@ -112,46 +112,50 @@ DATASEG
 	max_active_projectiles equ 60
 	active_projectiles_next_slot dw offset active_projectiles
 	time db 5
+	projectile_tick_movement equ 2
 	ticks_since_last_projectile_registration dw 0
 	minimum_ticks_between_projectiles dw 9
 
-	laser_id dw 1
-	laser_model		    db 00,00,00,00,15,00,00,00
-						db 00,00,00,15,12,15,00,00
-						db 00,00,00,15,12,15,00,00
-						db 00,00,00,15,12,15,00,00
-						db 00,00,00,15,12,15,00,00
-						db 00,00,00,15,12,15,00,00
-						db 00,00,00,15,12,15,00,00
-						db 00,00,00,00,15,00,00,00
-						db 00,00,00,00,00,00,00,00
-						db 00,00,00,00,00,00,00,00
-						db 00,00,00,00,00,00,00,00
+	no_projectile_id equ 0
 
-	missile_id dw 2
-	missile_model		db 00,00,00,03,03,00,00,00
-						db 00,00,00,08,08,00,00,00
-						db 00,00,00,03,03,00,00,00
-						db 00,00,00,03,03,00,00,00
-						db 00,00,00,08,08,00,00,00
-						db 00,00,03,03,03,03,00,00
-						db 00,03,03,03,03,03,03,00
-						db 00,03,03,00,00,03,03,00
-						db 00,03,00,00,00,00,03,00
-						db 00,00,00,00,00,00,00,00
-						db 00,00,00,00,00,00,00,00
-				
-	delete_shot			db 00,00,00,00,00,00,00,00
-						db 00,00,00,00,00,00,00,00
-						db 00,00,00,00,00,00,00,00
-						db 00,00,00,00,00,00,00,00
-						db 00,00,00,00,00,00,00,00
-						db 00,00,00,00,00,00,00,00
-						db 00,00,00,00,00,00,00,00
-						db 00,00,00,00,00,00,00,00
-						db 00,00,00,00,00,00,00,00
-						db 00,00,00,00,00,00,00,00
-						db 00,00,00,00,00,00,00,00
+	delete_projectile_id equ 1
+	delete_projectile_model			db 00,00,00,00,00,00,00,00
+									db 00,00,00,00,00,00,00,00
+									db 00,00,00,00,00,00,00,00
+									db 00,00,00,00,00,00,00,00
+									db 00,00,00,00,00,00,00,00
+									db 00,00,00,00,00,00,00,00
+									db 00,00,00,00,00,00,00,00
+									db 00,00,00,00,00,00,00,00
+									db 00,00,00,00,00,00,00,00
+									db 00,00,00,00,00,00,00,00
+									db 00,00,00,00,00,00,00,00
+
+	laser_id equ 2
+	laser_model		    			db 00,00,00,00,15,00,00,00
+									db 00,00,00,15,12,15,00,00
+									db 00,00,00,15,12,15,00,00
+									db 00,00,00,15,12,15,00,00
+									db 00,00,00,15,12,15,00,00
+									db 00,00,00,15,12,15,00,00
+									db 00,00,00,15,12,15,00,00
+									db 00,00,00,00,15,00,00,00
+									db 00,00,00,00,00,00,00,00
+									db 00,00,00,00,00,00,00,00
+									db 00,00,00,00,00,00,00,00
+
+	missile_id equ 3
+	missile_model					db 00,00,00,03,03,00,00,00
+									db 00,00,00,08,08,00,00,00
+									db 00,00,00,03,03,00,00,00
+									db 00,00,00,03,03,00,00,00
+									db 00,00,00,08,08,00,00,00
+									db 00,00,03,03,03,03,00,00
+									db 00,03,03,03,03,03,03,00
+									db 00,03,03,00,00,03,03,00
+									db 00,03,00,00,00,00,03,00
+									db 00,00,00,00,00,00,00,00
+									db 00,00,00,00,00,00,00,00
 
 CODESEG
 proc DrawModel
@@ -333,16 +337,14 @@ within_bounds:
     mov [si], dx               ; Store the projectile ID in the array
 
     ; Store the X position of the projectile
-    add si, 2                  ; Move to the next slot
     mov dx, [spaceship_curr_x] ; Get the spaceship's current X position
     add dx, 2                  ; Adjust the X position for the projectile
-    mov [si], dx               ; Store the adjusted X position in the array
+    mov [si + 2], dx               ; Store the adjusted X position in the array
 
     ; Store the Y position of the projectile
-    add si, 2                  ; Move to the next slot
     mov dx, [spaceship_curr_y] ; Get the spaceship's current Y position
     sub dx, 12                 ; Adjust the Y position for the projectile
-    mov [si], dx               ; Store the adjusted Y position in the array
+    mov [si + 4], dx               ; Store the adjusted Y position in the array
 
     ; Update the next available slot pointer
     add [active_projectiles_next_slot], 6
@@ -356,52 +358,161 @@ end_projectile_registration:
 endp register_projectile
 
 
-proc lazers
-	push projectile_hight
-	push projectile_width
-	push offset laser_model
-	add si, 2
-	push [si]
-	add si, 2
-	push [si]
-	xor dx,dx
-	mov dx, 2
-	sub [si], dx
-	call DrawModel
-	ret
-endp lazers
+proc animate_projectile
+;--------------------------------------------------------
+; Purpose:    
+;             Animates a single projectile by updating its position on the screen.
+; Inputs:     
+;             [BP + 4] - Pointer to the projectile's model (used for rendering).
+;             [BP + 6] - Pointer to the projectile's data in the `active_projectiles` array.
+; Behavior:   
+;             - Retrieves the projectile's current X and Y positions from the `active_projectiles` array.
+;             - Updates the projectile's Y position to move it upward on the screen by a fixed step.
+;             - Calls `DrawModel` to redraw the projectile at its new position.
+; Outputs:    
+;             - Updates the projectile's position in the `active_projectiles` array.
+;             - Redraws the projectile at its new position on the screen.
+; Notes:
+;             - The movement step is defined by the `projectile_tick_movement` variable.
+;             - This procedure assumes that the projectile's data structure is organized as:
+;               [ID, X position, Y position].
+;--------------------------------------------------------
+    push bp                ; Save the base pointer
+    mov bp, sp             ; Set up the stack frame
+
+    mov si, [bp + 6]       ; Load the pointer to the projectile's data
+    mov dx, projectile_tick_movement ; Load the movement step
+    sub [si + 4], dx           ; Update the Y position (move upward)
+
+    ; Push projectile dimensions and model to the stack
+    push projectile_hight  ; Height of the projectile
+    push projectile_width  ; Width of the projectile
+    push [bp + 4]          ; Pointer to the projectile's model
+    push [si + 2]          ; Push the X position onto the stack
+    push [si + 4]          ; Push the updated Y position onto the stack
+
+    call DrawModel         ; Call the procedure to redraw the projectile
+
+    pop bp                 ; Restore the base pointer
+    ret 4                  ; Clean up the stack and return
+endp animate_projectile
 
 
-proc missiles
-	push projectile_hight
-	push projectile_width
-	push offset missile_model
-	add si, 2
-	push [si]
-	add si, 2
-	push [si]
-	xor dx,dx
-	mov dx, 2
-	sub [si], dx
-	call DrawModel
-	ret
-endp missiles
+proc animate_projectiles
+;--------------------------------------------------------
+; Purpose:    
+;             Animates all active projectiles by iterating through the `active_projectiles` array.
+; Inputs:     
+;             None (uses global variables and constants).
+; Behavior:   
+;             - Loops through the `active_projectiles` array.
+;             - Checks the projectile ID to determine its type:
+;                 - `delete_projectile_id`: Marks the projectile as inactive and animates its deletion.
+;                 - `laser_id`: Animates the laser projectile.
+;                 - `missile_id`: Animates the missile projectile.
+;             - Skips empty slots or inactive projectiles.
+; Outputs:    
+;             - Updates the positions of all active projectiles.
+;             - Redraws each projectile at its new position.
+; Notes:
+;             - The `active_projectiles` array is organized as a list of projectiles, 
+;               where each projectile has the following structure:
+;               [ID, X position, Y position].
+;--------------------------------------------------------
+    mov si, offset active_projectiles ; Start of the `active_projectiles` array
+
+projectile_loop:
+    push si                           ; Save the current pointer
+
+    mov cx, [si]                      ; Load the projectile ID
+    cmp cx, [delete_projectile_id]    ; Check if the projectile is marked for deletion
+    je delete_projectile
+
+    cmp cx, [laser_id]                ; Check if the projectile is a laser
+    je projectile_laser
+
+    cmp cx, [missile_id]              ; Check if the projectile is a missile
+    je projectile_missile
+
+    jmp next_projectile               ; Skip to the next projectile if no match
+
+delete_projectile:
+    mov ax, [no_projectile_id]        ; Mark the projectile as inactive
+    mov [si], ax
+    push si                           ; Push the projectile data pointer
+    push offset delete_projectile_model ; Push the model for deletion
+    call animate_projectile           ; Animate the projectile
+    jmp next_projectile               ; Move to the next projectile
+
+projectile_laser:
+    push si                           ; Push the projectile data pointer
+    push offset laser_model           ; Push the laser model
+    call animate_projectile           ; Animate the laser
+    jmp next_projectile               ; Move to the next projectile
+
+projectile_missile:
+    push si                           ; Push the projectile data pointer
+    push offset missile_model         ; Push the missile model
+    call animate_projectile           ; Animate the missile
+    jmp next_projectile               ; Move to the next projectile
+
+next_projectile:
+    pop si                            ; Restore the current pointer
+    add si, 6                         ; Move to the next projectile slot
+    mov ax, si
+    sub ax, offset active_projectiles ; Calculate the offset from the start of the array
+    cmp ax, max_active_projectiles    ; Check if we've reached the end of the array
+    jb projectile_loop                ; Continue looping if not at the end
+
+    ret                               ; Return when all projectiles are processed
+endp animate_projectiles
 
 
-proc Deletep
-	push projectile_hight
-	push projectile_width
-	push offset delete_shot
-	xor dx,dx
+proc projectile_hit_check
+    mov si, offset active_projectiles ; Start of the `active_projectiles` array
+
+projectile_loop2:
+    push si                            ; Save the current pointer
+
+    mov cx, [si]
+    cmp cx, [no_projectile_id]
+	je next_projectile2
+
+	cmp cx, [delete_projectile_id]
+	je next_projectile2
+
+    cmp cx, [laser_id]
+    je ceiling_hit_check
+
+    cmp cx, [missile_id]
+    je ceiling_hit_check
+
+	jmp next_projectile2
+
+ceiling_hit_check:
+	mov dx, 0
+	cmp [si + 4], dx
+	ja next_projectile2
+	cmp [score], 0
+	jbe next_projectile2
+	mov dx, [missed_shot_score_penalty]
+	sub [score], dx
+	mov dx, [delete_projectile_id]
 	mov [si], dx
-	add si, 2
-	push [si]
-	add si, 2
-	push [si]
-	call DrawModel
-	ret
-endp Deletep
-;-------------------------------------------
+	jmp next_projectile2
+
+next_projectile2:
+    pop si                            ; Restore the current pointer
+    add si, 6                         ; Move to the next projectile slot
+    mov ax, si
+    sub ax, offset active_projectiles ; Calculate the offset from the start of the array
+    cmp ax, max_active_projectiles    ; Check if we've reached the end of the array
+    jb projectile_loop2                ; Continue looping if not at the end
+
+    ret    
+endp projectile_hit_check
+
+
 proc core
 	push bp
 	mov bp, sp
@@ -522,60 +633,6 @@ enemie_dead:
 endp enemie_annimtion
 
 
-proc shot_annimtion
-	push bp
-	mov bp, sp
-	mov ax, offset active_projectiles
-@@cycle:
-	mov si, ax
-	push ax
-	mov cx, [si]
-	
-	cmp  cx, 0
-	je no_bullet
-	
-	cmp  cx, 1
-	je Use_Laser
-
-	cmp  cx, 2
-	je Use_Missile
-	
-Use_Laser:
-	add si, 4
-	mov dx, 0
-	cmp [si], dx
-	jbe miss
-	sub si, 4
-	call lazers
-	jmp no_bullet
-Use_Missile:
-	add si, 4
-	mov dx, 0
-	cmp [si], dx
-	jbe miss
-	sub si, 4
-	call missiles
-	jmp no_bullet
-miss:
-	cmp [score], 0
-	jbe delete_bullet
-	mov cx, [missed_shot_score_penalty]
-	sub [score], cx
-delete_bullet:
-	sub si, 4
-	call Deletep
-no_bullet:
-	pop ax
-	add ax, 6
-	mov si, ax
-	sub si, offset active_projectiles
-	cmp si, max_active_projectiles
-	jb @@cycle 
-	pop bp
-	ret 
-endp shot_annimtion
-
-
 proc checkhit
 	push bp
 	mov bp, sp
@@ -618,9 +675,8 @@ boom:
 	inc [deadcount]
 	add [score], 100d
 	sub si, 4
-	push si
-	call Deletep
-	pop si
+	mov dx, [delete_projectile_id]
+	mov [si], dx
 	
 	sub di, 4
 	xor dx,dx
@@ -763,7 +819,8 @@ shots_annimation:
 	
 	inc [ticks_since_last_projectile_registration]
 	
-	call shot_annimtion
+	call projectile_hit_check
+	call animate_projectiles
 	call enemie_annimtion
 	call echeck
 	call checkhit
