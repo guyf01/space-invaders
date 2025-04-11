@@ -322,9 +322,9 @@ proc register_projectile
     jb end_projectile_registration ; Exit if not enough time has passed
 
     ; Load the next available slot in the active_projectiles array
-    mov si, [active_projectiles_next_slot]
-    sub si, offset active_projectiles
-    cmp si, max_active_projectiles
+    mov ax, [active_projectiles_next_slot]
+    sub ax, offset active_projectiles
+    cmp ax, max_active_projectiles
     jb within_bounds
     ; Reset to the start of the array if the end is reached
     mov [active_projectiles_next_slot], offset active_projectiles
@@ -363,10 +363,13 @@ proc animate_projectile
 ; Purpose:    
 ;             Animates a single projectile by updating its position on the screen.
 ; Inputs:     
-;             [BP + 4] - Pointer to the projectile's model (used for rendering).
-;             [BP + 6] - Pointer to the projectile's data in the `active_projectiles` array.
+;             [BP + 4] - Pointer to the projectile's data in the `active_projectiles` array.
 ; Behavior:   
-;             - Retrieves the projectile's current X and Y positions from the `active_projectiles` array.
+;             - Retrieves the projectile's ID, X, and Y positions from the `active_projectiles` array.
+;             - Checks the projectile's ID to determine its type:
+;                 - `delete_projectile_id`: Marks the projectile as inactive and animates its deletion.
+;                 - `laser_id`: Animates the laser projectile.
+;                 - `missile_id`: Animates the missile projectile.
 ;             - Updates the projectile's Y position to move it upward on the screen by a fixed step.
 ;             - Calls `DrawModel` to redraw the projectile at its new position.
 ; Outputs:    
@@ -376,141 +379,151 @@ proc animate_projectile
 ;             - The movement step is defined by the `projectile_tick_movement` variable.
 ;             - This procedure assumes that the projectile's data structure is organized as:
 ;               [ID, X position, Y position].
+;             - If the projectile is marked for deletion, it is replaced with the `delete_projectile_model`.
 ;--------------------------------------------------------
     push bp                ; Save the base pointer
     mov bp, sp             ; Set up the stack frame
 
-    mov si, [bp + 6]       ; Load the pointer to the projectile's data
+    mov si, [bp + 4]       ; Load the pointer to the projectile's data
+    mov dx, [si]           ; Load the projectile ID
+
+    cmp dx, [delete_projectile_id] ; Check if the projectile is marked for deletion
+    je delete
+
+    cmp dx, [laser_id]     ; Check if the projectile is a laser
+    je laser
+
+    cmp dx, [missile_id]   ; Check if the projectile is a missile
+    je missile
+
+    jmp animate_end        ; Skip to the end if no match found
+
+delete:
+    mov ax, [no_projectile_id] ; Mark the projectile as inactive
+    mov [si], ax
+    mov cx, offset delete_projectile_model ; Load the deletion model
+    jmp animate             ; Proceed to animate the deletion
+
+laser:
+    mov cx, offset laser_model ; Load the laser model
+    jmp animate
+
+missile:
+    mov cx, offset missile_model ; Load the missile model
+    jmp animate
+
+animate:
     mov dx, projectile_tick_movement ; Load the movement step
     sub [si + 4], dx           ; Update the Y position (move upward)
 
     ; Push projectile dimensions and model to the stack
-    push projectile_hight  ; Height of the projectile
-    push projectile_width  ; Width of the projectile
-    push [bp + 4]          ; Pointer to the projectile's model
-    push [si + 2]          ; Push the X position onto the stack
-    push [si + 4]          ; Push the updated Y position onto the stack
+    push projectile_hight      ; Height of the projectile
+    push projectile_width      ; Width of the projectile
+    push cx                    ; Pointer to the projectile's model
+    push [si + 2]              ; Push the X position onto the stack
+    push [si + 4]              ; Push the updated Y position onto the stack
 
-    call DrawModel         ; Call the procedure to redraw the projectile
+    call DrawModel             ; Call the procedure to redraw the projectile
 
-    pop bp                 ; Restore the base pointer
-    ret 4                  ; Clean up the stack and return
+animate_end:
+    pop bp                     ; Restore the base pointer
+    ret 2                      ; Clean up the stack and return
 endp animate_projectile
 
 
-proc animate_projectiles
+proc projectile_hit_check
 ;--------------------------------------------------------
 ; Purpose:    
-;             Animates all active projectiles by iterating through the `active_projectiles` array.
+;             Checks if a projectile has hit the ceiling or missed its target.
 ; Inputs:     
-;             None (uses global variables and constants).
+;             [BP + 4] - Pointer to the projectile's data in the `active_projectiles` array.
 ; Behavior:   
-;             - Loops through the `active_projectiles` array.
-;             - Checks the projectile ID to determine its type:
-;                 - `delete_projectile_id`: Marks the projectile as inactive and animates its deletion.
-;                 - `laser_id`: Animates the laser projectile.
-;                 - `missile_id`: Animates the missile projectile.
-;             - Skips empty slots or inactive projectiles.
+;             - Retrieves the projectile's ID and Y position.
+;             - Determines if the projectile is a laser or missile.
+;             - Checks if the projectile has hit the ceiling.
+;             - Deducts a penalty from the score if the projectile missed.
+;             - Marks the projectile for deletion if it hit the ceiling.
 ; Outputs:    
-;             - Updates the positions of all active projectiles.
-;             - Redraws each projectile at its new position.
+;             - Updates the `score` if a penalty is applied.
+;             - Marks the projectile as inactive if it hit the ceiling.
 ; Notes:
-;             - The `active_projectiles` array is organized as a list of projectiles, 
-;               where each projectile has the following structure:
+;             - The penalty for missing is defined by the `missed_shot_score_penalty` variable.
+;             - This procedure assumes the projectile's data structure is organized as:
 ;               [ID, X position, Y position].
 ;--------------------------------------------------------
-    mov si, offset active_projectiles ; Start of the `active_projectiles` array
+    push bp                ; Save the base pointer
+    mov bp, sp             ; Set up the stack frame
+
+    mov si, [bp + 4]       ; Load the pointer to the projectile's data
+    mov dx, [si]           ; Load the projectile ID
+
+    ; Check if the projectile is a laser or missile
+    cmp dx, [laser_id]
+    je check_ceiling
+
+    cmp dx, [missile_id]
+    je check_ceiling
+
+    ; If not a laser or missile, skip to the end
+    jmp hit_check_end
+
+check_ceiling:
+    ; Check if the projectile has hit the ceiling
+    mov dx, 0
+    cmp [si + 4], dx       ; Compare Y position with 0 (ceiling)
+    ja hit_check_end       ; If below the ceiling, skip
+
+    ; Penalize score if the projectile missed
+    cmp [score], 0
+    jbe hit_check_end      ; Skip if score is already 0 or negative
+    mov dx, [missed_shot_score_penalty]
+    sub [score], dx        ; Deduct penalty from score
+
+    ; Mark the projectile for deletion
+    mov dx, [delete_projectile_id]
+    mov [si], dx
+
+hit_check_end:
+    pop bp                 ; Restore the base pointer
+    ret 2                  ; Clean up the stack and return
+endp projectile_hit_check
+
+
+proc projectiles_handler
+;--------------------------------------------------------
+; Purpose:    
+;             Handles all active projectiles by checking for collisions and animating them.
+; Inputs:     
+;             None (operates on the `active_projectiles` array).
+; Behavior:   
+;             - Iterates through the `active_projectiles` array.
+;             - Calls `projectile_hit_check` to check if a projectile has hit the ceiling or missed.
+;             - Calls `animate_projectile` to update the projectile's position and redraw it.
+; Outputs:    
+;             - Updates the `active_projectiles` array to reflect changes in projectile states.
+; Notes:
+;             - Each projectile's data structure is assumed to be organized as:
+;               [ID, X position, Y position].
+;             - The procedure stops processing when all projectiles in the array have been handled.
+;--------------------------------------------------------
+	push bp                ; Save the base pointer
+    mov bp, offset active_projectiles ; Start of the `active_projectiles` array
 
 projectile_loop:
-    push si                           ; Save the current pointer
-
-    mov cx, [si]                      ; Load the projectile ID
-    cmp cx, [delete_projectile_id]    ; Check if the projectile is marked for deletion
-    je delete_projectile
-
-    cmp cx, [laser_id]                ; Check if the projectile is a laser
-    je projectile_laser
-
-    cmp cx, [missile_id]              ; Check if the projectile is a missile
-    je projectile_missile
-
-    jmp next_projectile               ; Skip to the next projectile if no match
-
-delete_projectile:
-    mov ax, [no_projectile_id]        ; Mark the projectile as inactive
-    mov [si], ax
-    push si                           ; Push the projectile data pointer
-    push offset delete_projectile_model ; Push the model for deletion
+    push bp
+    call projectile_hit_check         ; Check if the projectile hit the ceiling or missed
+    push bp
     call animate_projectile           ; Animate the projectile
-    jmp next_projectile               ; Move to the next projectile
 
-projectile_laser:
-    push si                           ; Push the projectile data pointer
-    push offset laser_model           ; Push the laser model
-    call animate_projectile           ; Animate the laser
-    jmp next_projectile               ; Move to the next projectile
-
-projectile_missile:
-    push si                           ; Push the projectile data pointer
-    push offset missile_model         ; Push the missile model
-    call animate_projectile           ; Animate the missile
-    jmp next_projectile               ; Move to the next projectile
-
-next_projectile:
-    pop si                            ; Restore the current pointer
-    add si, 6                         ; Move to the next projectile slot
-    mov ax, si
+    add bp, 6                         ; Move to the next projectile slot
+    mov ax, bp
     sub ax, offset active_projectiles ; Calculate the offset from the start of the array
     cmp ax, max_active_projectiles    ; Check if we've reached the end of the array
     jb projectile_loop                ; Continue looping if not at the end
 
+	pop bp
     ret                               ; Return when all projectiles are processed
-endp animate_projectiles
-
-
-proc projectile_hit_check
-    mov si, offset active_projectiles ; Start of the `active_projectiles` array
-
-projectile_loop2:
-    push si                            ; Save the current pointer
-
-    mov cx, [si]
-    cmp cx, [no_projectile_id]
-	je next_projectile2
-
-	cmp cx, [delete_projectile_id]
-	je next_projectile2
-
-    cmp cx, [laser_id]
-    je ceiling_hit_check
-
-    cmp cx, [missile_id]
-    je ceiling_hit_check
-
-	jmp next_projectile2
-
-ceiling_hit_check:
-	mov dx, 0
-	cmp [si + 4], dx
-	ja next_projectile2
-	cmp [score], 0
-	jbe next_projectile2
-	mov dx, [missed_shot_score_penalty]
-	sub [score], dx
-	mov dx, [delete_projectile_id]
-	mov [si], dx
-	jmp next_projectile2
-
-next_projectile2:
-    pop si                            ; Restore the current pointer
-    add si, 6                         ; Move to the next projectile slot
-    mov ax, si
-    sub ax, offset active_projectiles ; Calculate the offset from the start of the array
-    cmp ax, max_active_projectiles    ; Check if we've reached the end of the array
-    jb projectile_loop2                ; Continue looping if not at the end
-
-    ret    
-endp projectile_hit_check
+endp projectiles_handler
 
 
 proc core
@@ -819,8 +832,7 @@ shots_annimation:
 	
 	inc [ticks_since_last_projectile_registration]
 	
-	call projectile_hit_check
-	call animate_projectiles
+	call projectiles_handler
 	call enemie_annimtion
 	call echeck
 	call checkhit
