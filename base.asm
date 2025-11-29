@@ -51,7 +51,7 @@ DATASEG
     enemy_width equ 12
     enemy_height equ 10
 	dead_count dw 0
-	enemy_moving_left dw 1
+	enemies_moving_right dw 1
 	enemy_tick_x_movement equ 1
 	enemy_border_y_movement equ 3
 	enemies_move_down dw 0
@@ -536,7 +536,7 @@ proc animate_enemy
 ; Behavior:
 ;             - Retrieves the enemy's Status, X, and Y positions from the `active_enemies` array.
 ;             - Checks if the enemy is active (Status not 0).
-;             - Updates the enemy's X position based on 'enemy_moving_left' flag is set.
+;             - Updates the enemy's X position based on 'enemies_moving_right' flag is set.
 ;             - Updates the enemy's Y position if the `enemies_move_down` flag is set.
 ;             - Calls `DrawModel` to redraw the enemy at its new position.
 ; Outputs:
@@ -556,17 +556,17 @@ proc animate_enemy
 	cmp dx, inactive_enemy_id    		; If enemy status is inactive
 	je @@exit							; Skip animation for inactive enemies
 
-	cmp [enemy_moving_left], 1			; Check movement direction
-	je @@move_left						; Flag is set, move left
-
-@@move_right:
-	mov dx, enemy_tick_x_movement		; Get movement step
-	sub [si + 2], dx					; Subtract from X position to move right
-	jmp @@move_down_check				; Check for downward movement
+	cmp [enemies_moving_right], 1		; Check movement direction
+	je @@move_right						; Flag is set, move right
 
 @@move_left:
 	mov dx, enemy_tick_x_movement		; Get movement step
-	add [si + 2], dx					; Add to X position to move left
+	sub [si + 2], dx					; Subtract from X position to move left
+	jmp @@move_down_check				; Check for downward movement
+
+@@move_right:
+	mov dx, enemy_tick_x_movement		; Get movement step
+	add [si + 2], dx					; Add to X position to move right
 	jmp @@move_down_check				; Check for downward movement
 
 @@move_down_check:
@@ -706,14 +706,14 @@ proc echeck ;checks if the enemy touched the corners
 	mov dx, 20
 	cmp [si], dx
 	ja noright
-	mov [enemy_moving_left], 1
+	mov [enemies_moving_right], 1
 	mov [enemies_move_down], 1
 	jmp hell
 noright:
 	mov dx, 280
 	cmp [si], dx
 	jb ex
-	mov [enemy_moving_left], 0
+	mov [enemies_moving_right], 0
 	mov [enemies_move_down], 1
 	jmp hell
 ex:
@@ -748,7 +748,7 @@ proc enemie_annimtion
 	push enemy_width
 	push offset Enemy
 	add si,2
-	cmp [enemy_moving_left], 1
+	cmp [enemies_moving_right], 1
 	jne RightSide
 	mov dx, 1
 	add [si], dx
