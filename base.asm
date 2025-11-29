@@ -457,15 +457,13 @@ proc projectile_hit_check
     mov si, [bp + 4]       ; Load the pointer to the projectile's data
     mov dx, [si]           ; Load the projectile ID
 
-    ; Check if the projectile is a laser or missile
-    cmp dx, [laser_id]
-    je @@check_ceiling
+    ; Check if the projectile id is not active
+    cmp dx, [no_projectile_id]
+    je @@exit
 
-    cmp dx, [missile_id]
-    je @@check_ceiling
-
-    ; If not a laser or missile, skip to the end
-    jmp @@exit
+	; Check if the projectile id is marked for deletion
+    cmp dx, [delete_projectile_id]
+    je @@exit
 
 @@check_ceiling:
     ; Check if the projectile has hit the ceiling
@@ -473,15 +471,15 @@ proc projectile_hit_check
     cmp [si + 4], dx       ; Compare Y position with 0 (ceiling)
     ja @@exit       ; If below the ceiling, skip
 
+    ; Mark the projectile for deletion
+    mov dx, [delete_projectile_id]
+    mov [si], dx
+
     ; Penalize score if the projectile missed
     cmp [score], 0
     jbe @@exit      ; Skip if score is already 0 or negative
     mov dx, [missed_shot_score_penalty]
     sub [score], dx        ; Deduct penalty from score
-
-    ; Mark the projectile for deletion
-    mov dx, [delete_projectile_id]
-    mov [si], dx
 
 @@exit:
     pop bp                 ; Restore the base pointer
