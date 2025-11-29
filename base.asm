@@ -79,7 +79,7 @@ DATASEG
 					dw 1,200,110
 					dw 1,240,110
 
-	Enemie			db 00,00,00,00,00,00,00,00,00,00,00,00,00
+	Enemy			db 00,00,00,00,00,00,00,00,00,00,00,00,00
 					db 00,00,00,00,00,00,00,00,00,00,00,00,00
 					db 00,00,00,00,00,00,00,00,00,00,00,00,00
 					db 00,00,00,11,00,00,00,00,00,11,00,00,00
@@ -667,7 +667,7 @@ proc enemie_annimtion
 	push ax
 	push enemy_height
 	push enemy_width
-	push offset Enemie
+	push offset Enemy
 	add si,2
 	cmp [side], 1
 	jne RightSide
