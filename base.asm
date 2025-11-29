@@ -220,9 +220,9 @@ endp draw_pixel
 proc print_string
 ;--------------------------------------------------------
 ; Purpose:    Print a string on the screen at a specified location.
-; Inputs:     [BP+4] - Length of the string (word, passed via stack).
-;             [BP+6] - Screen location (word, row and column packed into a single word, passed via stack).
-;             [BP+8] - Pointer to the string in the data segment to print (word, passed via stack).
+; Inputs:     [BP+4] - Length of the string (word).
+;             [BP+6] - Screen location (word, row and column packed into a single word).
+;             [BP+8] - Pointer to the string in the data segment to print (word).
 ; Outputs:    None.
 ;--------------------------------------------------------
     push bp
@@ -252,7 +252,7 @@ proc play_note
 ;--------------------------------------------------------
 ; Purpose:    Play a musical note at a specified frequency for a short duration.
 ; Inputs:     
-;             [BP+4] - Frequency of the note in Hz (word, passed via stack).
+;             [BP+4] - Frequency of the note in Hz (word).
 ; Behavior:   
 ;             - Activates the PC speaker.
 ;             - Configures the Programmable Interval Timer (PIT) to generate the specified frequency.
