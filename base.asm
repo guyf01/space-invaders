@@ -734,50 +734,6 @@ hell:
 	ret 
 endp echeck
 
-proc enemie_annimtion
-	push bp
-	mov bp, sp
-	mov ax, offset active_enemies
-@@cycle:
-	mov si, ax
-	mov cx, [si]
-	cmp  cx, 0
-	je enemie_dead
-	push ax
-	push enemy_height
-	push enemy_width
-	push offset Enemy
-	add si,2
-	cmp [enemies_moving_right], 1
-	jne RightSide
-	mov dx, 1
-	add [si], dx
-	jmp rests
-RightSide:
-	mov dx, 1
-	sub [si], dx
-rests:
-	push [si]
-	add si,2
-	
-	cmp [enemies_move_down], 0
-	je NoYMovement
-	mov dx, 3
-	add [si], dx
-NoYMovement:
-	push [si]
-	call DrawModel
-	pop ax
-enemie_dead:
-	add ax, 6
-	mov si, ax
-	sub si, offset active_enemies
-	cmp si, max_active_enemies
-	jb @@cycle 
-	pop bp
-	ret 
-endp enemie_annimtion
-
 
 proc checkhit
 	push bp
