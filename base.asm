@@ -51,8 +51,9 @@ DATASEG
     enemy_width equ 12
     enemy_height equ 10
 	dead_count dw 0
-	side dw 1
-	rn dw 0
+	enemy_moving_left dw 1
+	enemy_tick_movement equ 2
+	enemies_move_down dw 0
 	max_active_enemies equ 144
 	active_enemies 	dw 1,40,20
 					dw 1,80,20
@@ -625,15 +626,15 @@ proc echeck ;checks if the enemy touched the corners
 	mov dx, 20
 	cmp [si], dx
 	ja noright
-	mov [side], 1
-	mov [rn], 1
+	mov [enemy_moving_left], 1
+	mov [enemies_move_down], 1
 	jmp hell
 noright:
 	mov dx, 280
 	cmp [si], dx
 	jb ex
-	mov [side], 0
-	mov [rn], 1
+	mov [enemy_moving_left], 0
+	mov [enemies_move_down], 1
 	jmp hell
 ex:
 	add si, 2
@@ -647,7 +648,7 @@ notlost:
 	sub si, offset active_enemies
 	cmp si, max_active_enemies
 	jb @@cycle 
-	mov [rn], 0
+	mov [enemies_move_down], 0
 hell:
 	pop bp
 	ret 
@@ -667,7 +668,7 @@ proc enemie_annimtion
 	push enemy_width
 	push offset Enemy
 	add si,2
-	cmp [side], 1
+	cmp [enemy_moving_left], 1
 	jne RightSide
 	mov dx, 1
 	add [si], dx
@@ -679,7 +680,7 @@ rests:
 	push [si]
 	add si,2
 	
-	cmp [rn], 0
+	cmp [enemies_move_down], 0
 	je NoYMovement
 	mov dx, 3
 	add [si], dx
