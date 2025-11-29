@@ -339,12 +339,12 @@ proc register_projectile
     ; Store the X position of the projectile
     mov dx, [spaceship_curr_x] ; Get the spaceship's current X position
     add dx, 2                  ; Adjust the X position for the projectile
-    mov [si + 2], dx               ; Store the adjusted X position in the array
+    mov [si + 2], dx           ; Store the adjusted X position in the array
 
     ; Store the Y position of the projectile
     mov dx, [spaceship_curr_y] ; Get the spaceship's current Y position
     sub dx, 12                 ; Adjust the Y position for the projectile
-    mov [si + 4], dx               ; Store the adjusted Y position in the array
+    mov [si + 4], dx           ; Store the adjusted Y position in the array
 
     ; Update the next available slot pointer
     add [active_projectiles_next_slot], 6
