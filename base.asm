@@ -51,33 +51,33 @@ DATASEG
     enemy_width equ 12
     enemy_height equ 10
 	deadcount dw 0
-	limit equ 144
 	side dw 1
 	rn dw 0
-	enemies_num dw 1,40,20
-				dw 1,80,20
-				dw 1,120,20
-				dw 1,160,20
-				dw 1,200,20
-				dw 1,240,20
-				dw 1,40,50
-				dw 1,80,50
-				dw 1,120,50
-				dw 1,160,50
-				dw 1,200,50
-				dw 1,240,50
-				dw 1,40,80
-				dw 1,80,80
-				dw 1,120,80
-				dw 1,160,80
-				dw 1,200,80
-				dw 1,240,80
-				dw 1,40,110
-				dw 1,80,110
-				dw 1,120,110
-				dw 1,160,110
-				dw 1,200,110
-				dw 1,240,110
+	max_active_enemies equ 144
+	active_enemies 	dw 1,40,20
+					dw 1,80,20
+					dw 1,120,20
+					dw 1,160,20
+					dw 1,200,20
+					dw 1,240,20
+					dw 1,40,50
+					dw 1,80,50
+					dw 1,120,50
+					dw 1,160,50
+					dw 1,200,50
+					dw 1,240,50
+					dw 1,40,80
+					dw 1,80,80
+					dw 1,120,80
+					dw 1,160,80
+					dw 1,200,80
+					dw 1,240,80
+					dw 1,40,110
+					dw 1,80,110
+					dw 1,120,110
+					dw 1,160,110
+					dw 1,200,110
+					dw 1,240,110
 
 	Enemie			db 00,00,00,00,00,00,00,00,00,00,00,00,00
 					db 00,00,00,00,00,00,00,00,00,00,00,00,00
@@ -526,6 +526,24 @@ proc projectiles_handler
 endp projectiles_handler
 
 
+; proc enemies_handler
+; 	push bp                ; Save the base pointer
+;     mov bp, offset active_projectiles ; Start of the `active_projectiles` array
+
+; @@projectile_loop:
+
+
+; 	add bp, 6
+; 	mov ax, bp
+; 	sub ax, offset active_enemies
+; 	cmp ax, max_active_enemies
+; 	jb @@cycle
+
+; 	pop bp
+;     ret                               ; Return when all projectiles are processed
+; endp enemies_handler
+
+
 proc display_score
 ;--------------------------------------------------------
 ; Purpose:    
@@ -600,7 +618,7 @@ endp display_score
 proc echeck ;checks if the enemy touched the corners
 	push bp
 	mov bp, sp
-	mov ax, offset enemies_num
+	mov ax, offset active_enemies
 @@cycle:
 	mov si, ax
 	add si, 2
@@ -628,8 +646,8 @@ ex:
 notlost:	
 	add ax, 6
 	mov si, ax
-	sub si, offset enemies_num
-	cmp si, limit
+	sub si, offset active_enemies
+	cmp si, max_active_enemies
 	jb @@cycle 
 	mov [rn], 0
 hell:
@@ -640,7 +658,7 @@ endp echeck
 proc enemie_annimtion
 	push bp
 	mov bp, sp
-	mov ax, offset enemies_num
+	mov ax, offset active_enemies
 @@cycle:
 	mov si, ax
 	mov cx, [si]
@@ -674,8 +692,8 @@ NoYMovement:
 enemie_dead:
 	add ax, 6
 	mov si, ax
-	sub si, offset enemies_num
-	cmp si, limit
+	sub si, offset active_enemies
+	cmp si, max_active_enemies
 	jb @@cycle 
 	pop bp
 	ret 
@@ -686,7 +704,7 @@ proc checkhit
 	push bp
 	mov bp, sp
 	mov si, offset active_projectiles
-	mov di, offset enemies_num
+	mov di, offset active_enemies
 xcheck:	
 	xor dx, dx
 	cmp [di], dx
@@ -757,8 +775,8 @@ next:
 	mov si, offset active_projectiles
 	add di, 6
 	mov dx, di
-	sub dx, offset enemies_num
-	cmp dx, limit
+	sub dx, offset active_enemies
+	cmp dx, max_active_enemies
 	ja fail
 jump_shortcut:
 	jmp xcheck
