@@ -50,7 +50,7 @@ DATASEG
 ;------------------
     enemy_width equ 12
     enemy_height equ 10
-	deadcount dw 0
+	dead_count dw 0
 	side dw 1
 	rn dw 0
 	max_active_enemies equ 144
@@ -642,7 +642,7 @@ ex:
 	mov dx, 170
 	cmp [si], dx
 	jb notlost
-	mov [deadcount], 30
+	mov [dead_count], 30
 notlost:	
 	add ax, 6
 	mov si, ax
@@ -739,7 +739,7 @@ ycheck:
 	cmp ax, dx
 	ja faily
 boom:
-	inc [deadcount]
+	inc [dead_count]
 	add [score], 100d
 	sub si, 4
 	mov dx, [delete_projectile_id]
@@ -953,9 +953,9 @@ NotLaser:
 exitoffrange:	
 	jmp shots_annimation 
 victoycheck:
-	cmp [deadcount], 24
+	cmp [dead_count], 24
 	je win
-	cmp [deadcount], 30
+	cmp [dead_count], 30
 	je lose
 	jmp inputloop
 win:
