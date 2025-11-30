@@ -209,36 +209,46 @@ proc DrawModel
 ;             push <x>
 ;             push <y>
 ;--------------------------------------------------------
-	push bp
-	mov bp,sp
+	push bp 				; Save the base pointer
+    mov bp, sp             	; Set up the stack frame
 	
-	mov ax, [bp + 4]
-	mov dx, [bp + 6]
-	mov si, [bp + 8]
-Again:
-	push ax
-    push dx
-	push ax
-    push dx
-    push [si]
-    call draw_pixel
-	pop dx
-	pop ax
+	mov ax, [bp + 4]	    ; Load starting Y
+	mov dx, [bp + 6]		; Load starting x
+	mov si, [bp + 8]		; Load pointer to model start
 
-    inc si
-    inc dx
-    mov cx, dx
-    sub cx, [bp + 6]
-    cmp cx, [bp + 10]
-    jbe  Again
-    mov dx,[bp + 6]
-    inc ax
-    mov cx, ax
-    sub cx, [bp + 4]
-    cmp cx, [bp + 12]
-    jbe  Again
-	pop bp
-	ret 10
+@@pixels_loop:
+	push ax               	; save current Y
+	push dx                	; save current X
+
+	push ax                	; Y for draw
+	push dx                	; X for draw
+	push [si]              	; color for draw
+	call draw_pixel			; Draw a pixel
+
+	pop dx                 	; restore saved X
+	pop ax                 	; restore saved Y
+
+	inc si                 	; advance to next byte in model (color for next pixel)
+	inc dx                 	; advance current X position on screen
+
+	; Check if we've drawn `width` pixels on this row:
+	mov cx, dx
+	sub cx, [bp + 6]       	; cx = currX - startX
+	cmp cx, [bp + 10]      	; compare with width
+	jbe @@pixels_loop       	; if currX - startX <= width, continue row
+
+	; End of row: reset X and move down one Y
+	mov dx, [bp + 6]       	; reset X to startX
+	inc ax                 	; advance to next Y row
+
+	; Check if we've drawn `height` rows:
+	mov cx, ax
+	sub cx, [bp + 4]       	; cx = currY - startY
+	cmp cx, [bp + 12]      	; compare with height
+	jbe @@pixels_loop       	; if currY - startY <= height, continue column
+
+    pop bp                 	; Restore the base pointer
+    ret 10                  ; Clean up the stack and return
 endp DrawModel
 
 
@@ -441,9 +451,9 @@ proc animate_projectile
     mov dx, projectile_tick_movement ; Load the movement step
     sub [si + 4], dx           ; Update the Y position (move upward)
 
-    ; Push projectile dimensions and model to the stack
-    push projectile_height      ; Height of the projectile
-    push projectile_width      ; Width of the projectile
+	; Push projectile dimensions and model to the stack
+	push projectile_height      ; Height of the projectile
+	push projectile_width      ; Width of the projectile
     push cx                    ; Pointer to the projectile's model
     push [si + 2]              ; Push the X position onto the stack
     push [si + 4]              ; Push the updated Y position onto the stack
@@ -805,7 +815,7 @@ boom:
 	sub di, 4
 	xor dx,dx
 	mov [di], dx
-	
+
 	push enemy_height
 	push enemy_width
 	push offset dead
