@@ -161,7 +161,54 @@ DATASEG
 									db 00,00,00,00,00,00,00,00
 
 CODESEG
+proc draw_pixel
+;--------------------------------------------------------
+; Purpose:    Draw a pixel on the screen at a specified location.
+; Inputs:     [BP+4] - Color of the pixel
+;             [BP+6] - X position
+;             [BP+8] - Y position
+; Outputs:    None
+;--------------------------------------------------------
+    push bp
+    mov bp, sp
+
+	; setup configurations from stack
+    mov al, [bp + 4]      ; Color of the pixel
+    mov cx, [bp + 6]      ; X position
+    mov dx, [bp + 8]      ; Y position
+
+	; execute BIOS interrupt
+    mov ah, 0ch           ; BIOS interrupt for drawing a pixel
+    int 10h               ; Call BIOS interrupt
+
+    pop bp
+    ret 6
+endp draw_pixel
+
+
 proc DrawModel
+;--------------------------------------------------------
+; Purpose:    Draw a rectangular model on the screen.
+; Inputs:     
+;			  [BP+4]  - Starting Y position (word)
+;             [BP+6]  - Starting X position (word)
+;             [BP+8]  - Pointer to the model bytes (offset)
+;             [BP+10] - Model width (word)
+;             [BP+12] - Model height (word)
+; Behavior:
+;			  Iterates over the model bytes row-by-row. For each
+;             model byte, it calls `draw_pixel` (passing the
+;             model byte as the color) and advances the drawing
+;             position. Stops after drawing `width` pixels per
+;             row and `height` rows.
+; Notes:
+; 			  Callers should push parameters in this order:
+;             push <height>
+;             push <width>
+;             push <offset model>
+;             push <x>
+;             push <y>
+;--------------------------------------------------------
 	push bp
 	mov bp,sp
 	
@@ -193,31 +240,6 @@ Again:
 	pop bp
 	ret 10
 endp DrawModel
-
-
-proc draw_pixel
-;--------------------------------------------------------
-; Purpose:    Draw a pixel on the screen at a specified location.
-; Inputs:     [BP+4] - Color of the pixel
-;             [BP+6] - X position
-;             [BP+8] - Y position
-; Outputs:    None
-;--------------------------------------------------------
-    push bp
-    mov bp, sp
-
-	; setup configurations from stack
-    mov al, [bp + 4]      ; Color of the pixel
-    mov cx, [bp + 6]      ; X position
-    mov dx, [bp + 8]      ; Y position
-
-	; execute BIOS interrupt
-    mov ah, 0ch           ; BIOS interrupt for drawing a pixel
-    int 10h               ; Call BIOS interrupt
-
-    pop bp
-    ret 6
-endp draw_pixel
 
 
 proc print_string
