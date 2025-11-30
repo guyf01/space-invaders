@@ -186,7 +186,7 @@ proc draw_pixel
 endp draw_pixel
 
 
-proc DrawModel
+proc draw_model
 ;--------------------------------------------------------
 ; Purpose:    Draw a rectangular model on the screen.
 ; Inputs:     
@@ -249,7 +249,7 @@ proc DrawModel
 
     pop bp                 	; Restore the base pointer
     ret 10                  ; Clean up the stack and return
-endp DrawModel
+endp draw_model
 
 
 proc print_string
@@ -406,7 +406,7 @@ proc animate_projectile
 ;                 - `laser_id`: Animates the laser projectile.
 ;                 - `missile_id`: Animates the missile projectile.
 ;             - Updates the projectile's Y position to move it upward on the screen by a fixed step.
-;             - Calls `DrawModel` to redraw the projectile at its new position.
+;             - Calls `draw_model` to redraw the projectile at its new position.
 ; Outputs:    
 ;             - Updates the projectile's position in the `active_projectiles` array.
 ;             - Redraws the projectile at its new position on the screen.
@@ -458,7 +458,7 @@ proc animate_projectile
     push [si + 2]              ; Push the X position onto the stack
     push [si + 4]              ; Push the updated Y position onto the stack
 
-    call DrawModel             ; Call the procedure to redraw the projectile
+    call draw_model             ; Call the procedure to redraw the projectile
 
 @@exit:
     pop bp                     ; Restore the base pointer
@@ -570,7 +570,7 @@ proc animate_enemy
 ;             - Checks if the enemy is active (Status not 0).
 ;             - Updates the enemy's X position based on 'enemies_moving_right' flag is set.
 ;             - Updates the enemy's Y position if the `enemies_move_down` flag is set.
-;             - Calls `DrawModel` to redraw the enemy at its new position.
+;             - Calls `draw_model` to redraw the enemy at its new position.
 ; Outputs:
 ;             - Updates the enemy's position in the `active_enemies` array.
 ;             - Redraws the enemy at its new position on the screen.
@@ -613,7 +613,7 @@ proc animate_enemy
 	push offset Enemy					; Pointer to enemy model
 	push [si + 2]						; X position
 	push [si + 4]						; Y position
-	call DrawModel						; Draw the enemy model
+	call draw_model						; Draw the enemy model
 
 @@exit:
     pop bp                 				; Restore the base pointer
@@ -823,7 +823,7 @@ boom:
 	push [di]
 	add di,2
 	push [di]
-	call DrawModel
+	call draw_model
 	sub di,4
 	jmp next
 failx:
@@ -944,7 +944,7 @@ start?:
 	push offset spaceship_model
 	push [spaceship_curr_x]
 	push [spaceship_curr_y]
-	call DrawModel
+	call draw_model
 shots_annimation:  
     mov ah,2ch
     int 21h
@@ -982,7 +982,7 @@ inputloop:
 	push offset spaceship_model
 	push [spaceship_curr_x]
 	push [spaceship_curr_y]
-	call DrawModel
+	call draw_model
 	jmp shots_annimation
 
 NotLeft:
@@ -996,7 +996,7 @@ NotLeft:
 	push offset spaceship_model
 	push [spaceship_curr_x]
 	push [spaceship_curr_y]
-	call DrawModel
+	call draw_model
 	jmp shots_annimation
 	
 NotRight:
