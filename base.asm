@@ -169,89 +169,6 @@ DATASEG
 									db 00,00,00,00,00,00,00,00
 
 CODESEG
-
-proc print_string
-;--------------------------------------------------------
-; Purpose:    Print a string on the screen at a specified location.
-; Inputs:     [BP+4] - Length of the string (word).
-;             [BP+6] - Screen location (word, row and column packed into a single word).
-;             [BP+8] - Pointer to the string in the data segment to print (word).
-; Outputs:    None.
-;--------------------------------------------------------
-	push bp 				; Save the base pointer
-    mov bp, sp				; Set up the stack frame
-
-	; setup configurations from stack
-    mov cx, [bp + 4]		; Length of the string to print
-    mov dx, [bp + 6]		; Screen location (row and column packed into a single word)
-    mov bp, [bp + 8]        ; Pointer to the string to print
-    mov bl, 00001111b       ; Set BL to the text color (white on black background)
-    mov al, 1               ; Set AL to 1 (String is written and the cursor position is updated)
-
-    ; Load data segment for the string
-    mov si, @data			; Load data segment address
-    mov es, si				; Set ES to data segment
-
-	; execute BIOS interrupt
-    mov ah, 13h             ; BIOS interrupt for printing a string
-    int 10h                 ; Call BIOS interrupt
-
-    pop bp                  ; Restore the base pointer
-    ret 6                   ; Clean up the stack and return
-endp print_string
-
-
-proc play_note
-;--------------------------------------------------------
-; Purpose:    Play a musical note at a specified frequency for a short duration.
-; Inputs:     
-;             [BP+4] - Frequency of the note in Hz (word).
-; Behavior:   
-;             - Activates the PC speaker.
-;             - Configures the Programmable Interval Timer (PIT) to generate the specified frequency.
-;             - Waits for a short duration using the system clock.
-;             - Deactivates the PC speaker after the note is played.
-; Outputs:    None.
-;--------------------------------------------------------
-    push bp                ; Save the base pointer
-    mov bp, sp             ; Set up the stack frame
-
-    ; Open the PC speaker
-    in al, 61h             ; Read the current state of the speaker control port
-    or al, 3               ; Set bits 0 and 1 to enable the speaker
-    out 61h, al            ; Write the updated state back to the speaker control port
-
-    ; Send control word to the PIT to set the frequency
-    mov al, 0B6h           ; Control word for PIT channel 2 in square wave mode
-    out 43h, al            ; Send the control word to the PIT control port
-
-    ; Send the frequency to the PIT
-    mov ax, [bp + 4]       ; Load the frequency from the stack into AX
-    out 42h, al            ; Send the lower byte of the frequency to the PIT data port
-    mov al, ah             ; Move the upper byte of the frequency into AL
-    out 42h, al            ; Send the upper byte of the frequency to the PIT data port
-	
-    ; Wait for a short duration using the system clock
-    mov ah, 2Ch            ; Function 2Ch: Get system time
-    int 21h                ; Call DOS interrupt to get the current time
-    mov bl, dl             ; Store the current time (hundredths of a second) in BL
-
-retry_time:
-    mov ah, 2Ch            ; Function 2Ch: Get system time
-    int 21h                ; Call DOS interrupt to get the current time
-    cmp bl, dl             ; Compare the stored time with the current time
-    je retry_time          ; If the time hasn't changed, keep waiting
-
-    ; Close the PC speaker
-    in al, 61h             ; Read the current state of the speaker control port
-    and al, 0FCh           ; Clear bits 0 and 1 to disable the speaker
-    out 61h, al            ; Write the updated state back to the speaker control port
-
-    pop bp                 ; Restore the base pointer
-    ret 2                  ; Clean up the stack and return
-endp play_note
-
-
 proc draw_pixel
 ;--------------------------------------------------------
 ; Purpose:    Draw a pixel on the screen at a specified location.
@@ -821,6 +738,66 @@ proc enemies_animation_handler
 endp enemies_animation_handler
 
 
+proc print_string
+;--------------------------------------------------------
+; Purpose:    Print a string on the screen at a specified location.
+; Inputs:     [BP+4] - Length of the string (word).
+;             [BP+6] - Screen location (word, row and column packed into a single word).
+;             [BP+8] - Pointer to the string in the data segment to print (word).
+; Outputs:    None.
+;--------------------------------------------------------
+	push bp 				; Save the base pointer
+    mov bp, sp				; Set up the stack frame
+
+	; setup configurations from stack
+    mov cx, [bp + 4]		; Length of the string to print
+    mov dx, [bp + 6]		; Screen location (row and column packed into a single word)
+    mov bp, [bp + 8]        ; Pointer to the string to print
+    mov bl, 00001111b       ; Set BL to the text color (white on black background)
+    mov al, 1               ; Set AL to 1 (String is written and the cursor position is updated)
+
+    ; Load data segment for the string
+    mov si, @data			; Load data segment address
+    mov es, si				; Set ES to data segment
+
+	; execute BIOS interrupt
+    mov ah, 13h             ; BIOS interrupt for printing a string
+    int 10h                 ; Call BIOS interrupt
+
+    pop bp                  ; Restore the base pointer
+    ret 6                   ; Clean up the stack and return
+endp print_string
+
+
+proc clear_screen
+;--------------------------------------------------------
+; Purpose:
+;             Clears the screen by filling it with black pixels.
+; Inputs:
+;             None (operates on the video memory directly).
+; Behavior:
+;             - Fills the entire video memory (64,000 bytes) with black pixels (color 0).
+; Outputs:
+;             - The screen is cleared to black.
+; Notes:
+;             - Uses the `stosw` instruction to efficiently fill the video memory.
+;--------------------------------------------------------
+	push bp				; Save the base pointer
+	mov bp, sp          ; Set up the stack frame
+
+	mov ax, 0A000h      ; Video memory segment for mode 13h
+	mov es, ax          ; Set ES to video memory segment
+	xor di, di          ; Start at offset 0
+	xor ax, ax          ; AX = 0 (black pixel color)
+	mov cx, 32000       ; 32000 words = 64000 bytes
+
+	rep stosw           ; Fill video memory with black pixels
+
+	pop bp              ; Restore the base pointer
+	ret                 ; Clean up the stack and return
+endp clear_screen
+
+
 proc display_score
 ;--------------------------------------------------------
 ; Purpose:    
@@ -888,8 +865,59 @@ proc display_score
 
 @@exit:
     pop bp                 ; Restore the base pointer
-    ret                    ; Return from the procedure
+    ret                    ; Clean up the stack and return
 endp display_score
+
+
+proc play_note
+;--------------------------------------------------------
+; Purpose:    Play a musical note at a specified frequency for a short duration.
+; Inputs:     
+;             [BP+4] - Frequency of the note in Hz (word).
+; Behavior:   
+;             - Activates the PC speaker.
+;             - Configures the Programmable Interval Timer (PIT) to generate the specified frequency.
+;             - Waits for a short duration using the system clock.
+;             - Deactivates the PC speaker after the note is played.
+; Outputs:    None.
+;--------------------------------------------------------
+    push bp                ; Save the base pointer
+    mov bp, sp             ; Set up the stack frame
+
+    ; Open the PC speaker
+    in al, 61h             ; Read the current state of the speaker control port
+    or al, 3               ; Set bits 0 and 1 to enable the speaker
+    out 61h, al            ; Write the updated state back to the speaker control port
+
+    ; Send control word to the PIT to set the frequency
+    mov al, 0B6h           ; Control word for PIT channel 2 in square wave mode
+    out 43h, al            ; Send the control word to the PIT control port
+
+    ; Send the frequency to the PIT
+    mov ax, [bp + 4]       ; Load the frequency from the stack into AX
+    out 42h, al            ; Send the lower byte of the frequency to the PIT data port
+    mov al, ah             ; Move the upper byte of the frequency into AL
+    out 42h, al            ; Send the upper byte of the frequency to the PIT data port
+	
+    ; Wait for a short duration using the system clock
+    mov ah, 2Ch            ; Function 2Ch: Get system time
+    int 21h                ; Call DOS interrupt to get the current time
+    mov bl, dl             ; Store the current time (hundredths of a second) in BL
+
+retry_time:
+    mov ah, 2Ch            ; Function 2Ch: Get system time
+    int 21h                ; Call DOS interrupt to get the current time
+    cmp bl, dl             ; Compare the stored time with the current time
+    je retry_time          ; If the time hasn't changed, keep waiting
+
+    ; Close the PC speaker
+    in al, 61h             ; Read the current state of the speaker control port
+    and al, 0FCh           ; Clear bits 0 and 1 to disable the speaker
+    out 61h, al            ; Write the updated state back to the speaker control port
+
+    pop bp                 ; Restore the base pointer
+    ret 2                  ; Clean up the stack and return
+endp play_note
 
 
 proc difficulty_select
@@ -951,6 +979,8 @@ proc difficulty_select
 	mov [missed_shot_score_penalty], 100	; Set penalty for Hard difficulty
 
 @@exit:
+	call clear_screen						; Clear the screen after selection
+
 	pop bp                  				; Restore the base pointer
 	ret                     				; Return from the procedure
 endp difficulty_select
@@ -965,14 +995,7 @@ start:
 
 	call difficulty_select					; Call difficulty selection procedure
 
-	mov ax,0600h    						
-	mov BH,00h    
-	mov CX,0000h    
-	mov DX,184fh    
-    int 10h        
-	mov ax, 0600h
-	int 10h
-;starting page
+	;starting page
 	push offset start_guide_msg
 	push 409h
 	push 20
