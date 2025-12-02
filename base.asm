@@ -892,50 +892,80 @@ proc display_score
 endp display_score
 
 
+proc difficulty_select
+;--------------------------------------------------------
+; Purpose:
+;             Allows the player to select a difficulty level for the game.
+; Inputs:
+;             None (waits for keyboard input).
+; Behavior:
+;             - Displays difficulty options on the screen.
+;             - Waits for the player to press '1', '2', or '3' to select Easy, Medium, or Hard difficulty.
+;             - Sets the `missed_shot_score_penalty` variable based on the selected difficulty.
+; Outputs:
+;             - Updates the `missed_shot_score_penalty` variable.
+; Notes:
+;             - '1' sets Easy difficulty (10 points penalty).
+;             - '2' sets Medium difficulty (50 points penalty).
+;             - '3' sets Hard difficulty (100 points penalty).
+;--------------------------------------------------------
+	push bp                 				; Save the base pointer
+	mov bp, sp              				; Set up the stack frame
+
+	push offset ez_difficult_msg			; Display Easy difficulty message
+	push 409h								; Screen position
+	push 16									; Length of the message
+	call print_string
+
+	push offset medium_difficult_msg		; Display Medium difficulty message
+	push 809h								; Screen position
+	push 18									; Length of the message
+	call print_string
+
+	push offset hard_difficult_msg			; Display Hard difficulty message
+	push 0c09h								; Screen position
+	push 16									; Length of the message
+	call print_string
+
+@@get_input:
+    mov ah, 0 								; Wait for keyboard input
+    int 16h									; BIOS interrupt to read keyboard input
+
+	cmp al, '1'								; Check if '1' (Easy) was pressed
+	jne @@check_medium						; If not, check for Medium
+
+	mov [missed_shot_score_penalty], 10		; Set penalty for Easy difficulty
+	jmp @@exit								; Difficulty selected, exit
+
+@@check_medium:
+	cmp al, '2'								; Check if '2' (Medium) was pressed
+	jne @@check_hard						; If not, check for Hard
+
+	mov [missed_shot_score_penalty], 50		; Set penalty for Medium difficulty
+	jmp @@exit								; Difficulty selected, exit
+
+@@check_hard:
+	cmp al, '3'								; Check if '3' (Hard) was pressed
+	jne @@get_input							; Not valid input, wait again
+	
+	mov [missed_shot_score_penalty], 100	; Set penalty for Hard difficulty
+
+@@exit:
+	pop bp                  				; Restore the base pointer
+	ret                     				; Return from the procedure
+endp difficulty_select
+
+
 start:
-    mov ax, @data
+    mov ax, @data 							; Initialize data segment
     mov ds, ax
 	
-    mov ax, 0013h
-    int 10h
-;difficulty select 
-	push offset ez_difficult_msg
-	push 409h
-	push 16
-	call print_string
-	push offset medium_difficult_msg
-	push 809h
-	push 18
-	call print_string
-	push offset hard_difficult_msg
-	push 0c09h
-	push 16
-	call print_string
-difficulty?:
-	mov ah, 1
-    int 16h 
-    jz difficulty? 
+    mov ax, 0013h 							; Set video mode 13h (320x200, 256 colors)
+    int 10h									; BIOS interrupt to set video mode
 
-    mov ah, 0 
-    int 16h
-	cmp al, '1'
-	je easy
-	cmp al, '2'
-	je med1um
-	cmp al, '3'
-	je hard
-	jmp difficulty?
-easy:
-	mov [missed_shot_score_penalty], 10
-	jmp enddif
-med1um:
-	mov [missed_shot_score_penalty], 50
-	jmp enddif
-hard:
-	mov [missed_shot_score_penalty], 100
-	jmp enddif
-enddif:
-	mov ax,0600h    
+	call difficulty_select					; Call difficulty selection procedure
+
+	mov ax,0600h    						
 	mov BH,00h    
 	mov CX,0000h    
 	mov DX,184fh    
