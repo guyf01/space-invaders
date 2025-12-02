@@ -572,11 +572,12 @@ proc enemy_hit_check
 
 @@check_x:
 	mov ax, [di + 2]                ; Load projectile X position
+	add ax, 6						; Adjust projectile X for width for collision
 	mov dx, [si + 2]                ; Load enemy X position
 	cmp ax, dx                      ; Compare projectile X with enemy X
 	jb @@next_enemy                 ; If projectile X < enemy X, go to next enemy
 
-	add dx, enemy_width             ; Calculate enemy right boundary
+	add dx, 16						; Add enemy width to enemy X position for collision
 	cmp ax, dx                      ; Compare projectile X with enemy right boundary
 	ja @@next_enemy                 ; If projectile X > enemy right boundary, go to next enemy
 
