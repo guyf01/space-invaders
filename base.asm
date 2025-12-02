@@ -636,18 +636,20 @@ proc enemies_direction_handler
 endp enemies_direction_handler
 
 
-proc animate_enemy
+proc enemies_animation_handler
 ;--------------------------------------------------------
 ; Purpose:
-;             Animates a single enemy by updating its position on the screen.
+;             Animates all enemies by by updating their position on the screen.
 ; Inputs:
-;             [BP + 4] - Pointer to the enemy's data in the `active_enemies` array.
+;             None (operates on the `active_enemies` array).
 ; Behavior:
+;             - Iterates through the `active_enemies` array.
 ;             - Retrieves the enemy's Status, X, and Y positions from the `active_enemies` array.
 ;             - Checks if the enemy is active (Status not 0).
 ;             - Updates the enemy's X position based on 'enemies_moving_right' flag is set.
 ;             - Updates the enemy's Y position if the `enemies_move_down` flag is set.
 ;             - Calls `draw_model` to redraw the enemy at its new position.
+; 			  - Resets the `enemies_move_down` flag after processing all enemies.
 ; Outputs:
 ;             - Updates the enemy's position in the `active_enemies` array.
 ;             - Redraws the enemy at its new position on the screen.
@@ -655,15 +657,15 @@ proc animate_enemy
 ;             - The movement step is defined by the `enemy_tick_x_movement` and 'enemy_border_y_movement' variable.
 ;             - This procedure assumes that the enemy's data structure is organized as:
 ;               [Status, X position, Y position].
+;             - The procedure stops processing when all enemies in the array have been handled.
 ;--------------------------------------------------------
-    push bp              			  	; Save the base pointer
-    mov bp, sp           				; Set up the stack frame
+	push bp              			  	; Save the base pointer
+    mov si, offset active_enemies		; Start of the `active_enemies` array
 
-	mov si, [bp + 4]					; Load enemy data
+@@enemy_loop:
 	mov dx, [si]						; Get enemy status
-
 	cmp dx, inactive_enemy_id    		; If enemy status is inactive
-	je @@exit							; Skip animation for inactive enemies
+	je @@next_enemy						; Skip animation for inactive enemies
 
 	cmp [enemies_moving_right], 1		; Check movement direction
 	je @@move_right						; Flag is set, move right
@@ -681,51 +683,26 @@ proc animate_enemy
 @@move_down_check:
 	cmp [enemies_move_down], 0			; Check if enemies should move down
 	je @@animate						; No downward movement, proceed to animation
+
 	mov dx, enemy_border_y_movement 	; Get movement step
 	add [si + 4], dx					; Add to Y position to move down
 
 @@animate:
+	push si								; Save pointer to current enemy
 	push enemy_height					; Enemy height
 	push enemy_width					; Enemy width
 	push offset Enemy					; Pointer to enemy model
 	push [si + 2]						; X position
 	push [si + 4]						; Y position
 	call draw_model						; Draw the enemy model
+	pop si								; Restore pointer to current enemy
 
-@@exit:
-    pop bp                 				; Restore the base pointer
-    ret 2                  				; Clean up the stack and return
-endp animate_enemy
-
-
-proc enemies_handler
-;--------------------------------------------------------
-; Purpose:    
-;             Handles all enemies by checking for collisions and animating them.
-; Inputs:     
-;             None (operates on the `active_enemies` array).
-; Behavior:   
-;             - Iterates through the `active_enemies` array.
-;             - Calls `animate_enemy` to update the enemy position and redraw it.
-; Outputs:    
-;             - Updates the `active_enemies` array to reflect changes in enemies states.
-; Notes:
-;             - Each enemy's data structure is assumed to be organized as:
-;               [Status, X position, Y position].
-;             - The procedure stops processing when all enemies in the array have been handled.
-;--------------------------------------------------------
-	push bp              			  	; Save the base pointer
-    mov bp, offset active_enemies		; Start of the `active_enemies` array
-
-@@enemy_loop:
-	push bp								; Pointer to current enemy
-	call animate_enemy					; Animates it
-
-	add bp, 6							; Move to the next enemy slot	
-	mov ax, bp							
-	sub ax, offset active_enemies		; Calculate the offset from the start of the array
-	cmp ax, max_active_enemies			; Check if we've reached the end of the array
-	jb @@enemy_loop						; Continue looping if not at the end
+@@next_enemy:
+	add si, 6							; Move to the next enemy slot (each enemy is 6 bytes: Status, X, Y)
+	mov ax, si						 	; Load current position
+	sub ax, offset active_enemies	 	; Calculate the offset from the start of the array
+	cmp ax, max_active_enemies		 	; Check if we've reached the end of the array
+	jb @@enemy_loop					 	; Continue looping if not at the end
 
 	cmp [enemies_move_down], 0			; Reset move down flag after processing all enemies
 	je @@exit							; If already 0, exit
@@ -734,7 +711,7 @@ proc enemies_handler
 @@exit:
 	pop bp								; Restore the base pointer
 	ret									; Clean up the stack and return
-endp enemies_handler
+endp enemies_animation_handler
 
 
 proc display_score
@@ -995,7 +972,7 @@ shots_annimation:
 	inc [ticks_since_last_projectile_registration]
 	
 	call projectiles_handler
-	call enemies_handler
+	call enemies_animation_handler
 	call enemies_direction_handler
 	call checkhit
 	
