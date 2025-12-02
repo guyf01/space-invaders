@@ -59,57 +59,61 @@ DATASEG
 	enemy_tick_x_movement equ 1
 	enemy_border_y_movement equ 3
 	enemies_move_down dw 0
+	enemy_score_value equ 100
 	max_active_enemies equ 144
-	active_enemies 	dw 1,40,20
-					dw 1,80,20
-					dw 1,120,20
-					dw 1,160,20
-					dw 1,200,20
-					dw 1,240,20
-					dw 1,40,50
-					dw 1,80,50
-					dw 1,120,50
-					dw 1,160,50
-					dw 1,200,50
-					dw 1,240,50
-					dw 1,40,80
-					dw 1,80,80
-					dw 1,120,80
-					dw 1,160,80
-					dw 1,200,80
-					dw 1,240,80
-					dw 1,40,110
-					dw 1,80,110
-					dw 1,120,110
-					dw 1,160,110
-					dw 1,200,110
-					dw 1,240,110
-
-	active_enemy_id equ 1
-	Enemy			db 00,00,00,00,00,00,00,00,00,00,00,00,00
-					db 00,00,00,00,00,00,00,00,00,00,00,00,00
-					db 00,00,00,00,00,00,00,00,00,00,00,00,00
-					db 00,00,00,11,00,00,00,00,00,11,00,00,00
-					db 00,00,00,00,11,00,00,00,11,00,00,00,00
-					db 00,00,00,11,11,11,11,11,11,11,00,00,00
-					db 00,00,11,11,00,11,11,11,00,11,11,00,00
-					db 00,11,11,11,11,11,11,11,11,11,11,11,00
-					db 00,11,00,11,11,11,11,11,11,11,00,11,00
-					db 00,11,00,11,00,00,00,00,00,11,00,11,00
-					db 00,00,00,00,11,11,00,11,11,00,00,00,00
+	active_enemies 	dw 2,40,20
+					dw 2,80,20
+					dw 2,120,20
+					dw 2,160,20
+					dw 2,200,20
+					dw 2,240,20
+					dw 2,40,50
+					dw 2,80,50
+					dw 2,120,50
+					dw 2,160,50
+					dw 2,200,50
+					dw 2,240,50
+					dw 2,40,80
+					dw 2,80,80
+					dw 2,120,80
+					dw 2,160,80
+					dw 2,200,80
+					dw 2,240,80
+					dw 2,40,110
+					dw 2,80,110
+					dw 2,120,110
+					dw 2,160,110
+					dw 2,200,110
+					dw 2,240,110
 
 	inactive_enemy_id equ 0
-	dead 			db 00,00,00,00,00,00,00,00,00,00,00,00,00
-					db 00,00,00,00,00,00,00,00,00,00,00,00,00
-					db 00,00,00,00,00,00,00,00,00,00,00,00,00
-					db 00,00,00,00,00,00,00,00,00,00,00,00,00
-					db 00,00,00,00,00,00,00,00,00,00,00,00,00
-					db 00,00,00,00,00,00,00,00,00,00,00,00,00
-					db 00,00,00,00,00,00,00,00,00,00,00,00,00
-					db 00,00,00,00,00,00,00,00,00,00,00,00,00
-					db 00,00,00,00,00,00,00,00,00,00,00,00,00
-					db 00,00,00,00,00,00,00,00,00,00,00,00,00
-					db 00,00,00,00,00,00,00,00,00,00,00,00,00
+
+	delete_enemy_id equ 1
+	delete_enemy_model 		db 00,00,00,00,00,00,00,00,00,00,00,00,00
+							db 00,00,00,00,00,00,00,00,00,00,00,00,00
+							db 00,00,00,00,00,00,00,00,00,00,00,00,00
+							db 00,00,00,00,00,00,00,00,00,00,00,00,00
+							db 00,00,00,00,00,00,00,00,00,00,00,00,00
+							db 00,00,00,00,00,00,00,00,00,00,00,00,00
+							db 00,00,00,00,00,00,00,00,00,00,00,00,00
+							db 00,00,00,00,00,00,00,00,00,00,00,00,00
+							db 00,00,00,00,00,00,00,00,00,00,00,00,00
+							db 00,00,00,00,00,00,00,00,00,00,00,00,00
+							db 00,00,00,00,00,00,00,00,00,00,00,00,00
+
+	active_enemy_id equ 2
+	active_enemy_model		db 00,00,00,00,00,00,00,00,00,00,00,00,00
+							db 00,00,00,00,00,00,00,00,00,00,00,00,00
+							db 00,00,00,00,00,00,00,00,00,00,00,00,00
+							db 00,00,00,11,00,00,00,00,00,11,00,00,00
+							db 00,00,00,00,11,00,00,00,11,00,00,00,00
+							db 00,00,00,11,11,11,11,11,11,11,00,00,00
+							db 00,00,11,11,00,11,11,11,00,11,11,00,00
+							db 00,11,11,11,11,11,11,11,11,11,11,11,00
+							db 00,11,00,11,11,11,11,11,11,11,00,11,00
+							db 00,11,00,11,00,00,00,00,00,11,00,11,00
+							db 00,00,00,00,11,11,00,11,11,00,00,00,00
+
 ; ------------------
 ; projectile variables
 ; ------------------
@@ -526,6 +530,94 @@ proc projectile_hit_check
 endp projectile_hit_check
 
 
+proc enemy_hit_check
+;--------------------------------------------------------
+; Purpose:
+;             Checks if a projectile has hit any active enemies.
+; Inputs:
+;             [BP + 4] - Pointer to the projectile's data in the `active_projectiles` array.
+; Behavior:
+;             - Retrieves the projectile's ID and position.
+;             - Iterates through the `active_enemies` array.
+;             - For each active enemy, checks if the projectile's position overlaps with the enemy's position.
+;             - If a hit is detected, marks both the projectile and enemy for deletion,
+;               increments the `dead_count`, and updates the score.
+; Outputs:
+;             - Updates the `active_enemies` array and `score` if a hit is detected.
+; Notes:
+;             - The procedure assumes the projectile's data structure is organized as:
+;               [ID, X position, Y position].
+;             - Each enemy's data structure is organized as:
+;               [Status, X position, Y position].
+;--------------------------------------------------------
+    push bp							; Save the base pointer
+    mov bp, sp						; Set up the stack frame
+
+    mov di, [bp + 4]				; Load the pointer to the projectile's data
+    mov dx, [di]					; Load the projectile ID
+
+    cmp dx, [no_projectile_id]		; Check if the projectile id is not active
+    je @@exit						; Exit if not active
+
+    cmp dx, [delete_projectile_id]	; Check if the projectile id is marked for deletion
+    je @@exit						; Exit if marked for deletion
+
+	mov si, offset active_enemies	; Start of the `active_enemies` array
+
+@@enemy_loop:
+	mov dx, [si]					; Load current enemy's Status
+
+	cmp dx, [inactive_enemy_id]		; If current enemy's Status == inactive, skip it
+	je @@next_enemy                 ; Jump to advance to the next slot
+
+	cmp dx, [delete_enemy_id]       ; If current enemy's Status == inactive, skip it
+	je @@next_enemy                 ; Jump to advance to the next slot
+
+@@check_x:
+	mov ax, [di + 2]                ; Load projectile X position
+	mov dx, [si + 2]                ; Load enemy X position
+	cmp ax, dx                      ; Compare projectile X with enemy X
+	jb @@next_enemy                 ; If projectile X < enemy X, go to next enemy
+
+	add dx, enemy_width             ; Calculate enemy right boundary
+	cmp ax, dx                      ; Compare projectile X with enemy right boundary
+	ja @@next_enemy                 ; If projectile X > enemy right boundary, go to next enemy
+
+@@check_y:
+	mov ax, [di + 4]                ; Load projectile Y position
+	mov dx, [si + 4]                ; Load enemy Y position
+	cmp ax, dx                      ; Compare projectile Y with enemy Y
+	jb @@next_enemy                 ; If projectile Y < enemy Y, go to next enemy
+
+	add dx, enemy_height            ; Calculate enemy bottom boundary
+	cmp ax, dx                      ; Compare projectile Y with enemy bottom boundary
+	ja @@next_enemy                 ; If projectile Y > enemy bottom boundary, go to next enemy
+
+@@hit:
+	mov dx, [delete_projectile_id]	; Load delete projectile ID
+	mov [di], dx					; Mark projectile for deletion
+
+	mov dx, [delete_enemy_id]		; Load delete enemy ID
+	mov [si], dx					; Mark enemy for deletion
+
+	inc [dead_count]				; Increment dead enemy count
+
+	mov dx, enemy_score_value		; Load enemy score value
+	add [score], dx					; Update score
+
+@@next_enemy:
+	add si, 6						; Move to the next enemy slot (each enemy is 6 bytes: Status, X, Y)
+	mov ax, si						; Load current position
+	sub ax, offset active_enemies	; Calculate the offset from the start of the array
+	cmp ax, max_active_enemies		; Check if we've reached the end of the array
+	jb @@enemy_loop					; Continue looping if not at the end
+
+@@exit:
+    pop bp                 			; Restore the base pointer
+    ret 2                  			; Clean up the stack and return
+endp enemy_hit_check
+
+
 proc projectiles_handler
 ;--------------------------------------------------------
 ; Purpose:    
@@ -551,6 +643,8 @@ proc projectiles_handler
     call projectile_hit_check         	; Check if the projectile hit the ceiling or missed
     push bp								; Pointer to current projectile
     call animate_projectile           	; Animate the projectile
+	push bp								; Pointer to current projectile
+	call enemy_hit_check				; Check if the projectile hit any enemy
 
     add bp, 6                         	; Move to the next projectile slot
     mov ax, bp
@@ -593,8 +687,12 @@ proc enemies_direction_handler
 	mov si, offset active_enemies    ; Start of `active_enemies` array (pointer to first enemy slot)
 
 @@enemy_loop:
-	mov dx, inactive_enemy_id        ; Load inactive enemy ID for comparison
-	cmp [si], dx                     ; If current enemy's Status == inactive, skip it
+	mov dx, [si]                     ; Load current enemy's Status
+
+	cmp dx, [inactive_enemy_id]      ; If current enemy's Status == inactive, skip it
+	je @@next_enemy                  ; Jump to advance to the next slot
+
+	cmp dx, [delete_enemy_id]		 ; If current enemy's Status == delete, skip it
 	je @@next_enemy                  ; Jump to advance to the next slot
 
 @@check_floor:
@@ -663,9 +761,21 @@ proc enemies_animation_handler
     mov si, offset active_enemies		; Start of the `active_enemies` array
 
 @@enemy_loop:
-	mov dx, [si]						; Get enemy status
-	cmp dx, inactive_enemy_id    		; If enemy status is inactive
-	je @@next_enemy						; Skip animation for inactive enemies
+	mov dx, [si]                     	; Load current enemy's Status
+
+	cmp dx, [inactive_enemy_id]      	; If current enemy's Status == inactive, skip it
+	je @@next_enemy                 	; Jump to advance to the next slot
+
+	cmp dx, [delete_enemy_id]		  	; If current enemy's Status == delete
+	jne @@active_enemy_checks
+
+	mov dx, [inactive_enemy_id]		  	; Load delete enemy ID for comparison
+	mov [si], dx						; Ensure enemy is marked as deleted
+	mov cx, offset delete_enemy_model	; Pointer to delete enemy model
+	jmp @@animate
+
+@@active_enemy_checks:
+	mov cx, offset active_enemy_model	; Pointer to enemy model
 
 	cmp [enemies_move_down], 0			; Check if enemies should move down
 	je @@direction_check				; No downward movement, proceed to direction check
@@ -690,7 +800,7 @@ proc enemies_animation_handler
 	push si								; Save pointer to current enemy
 	push enemy_height					; Enemy height
 	push enemy_width					; Enemy width
-	push offset Enemy					; Pointer to enemy model
+	push cx								; Pointer to enemy model
 	push [si + 2]						; X position
 	push [si + 4]						; Y position
 	call draw_model						; Draw the enemy model
@@ -783,91 +893,6 @@ proc display_score
     ret                    ; Return from the procedure
 endp display_score
 
-
-proc checkhit
-	push bp
-	mov bp, sp
-	mov si, offset active_projectiles
-	mov di, offset active_enemies
-xcheck:	
-	xor dx, dx
-	cmp [di], dx
-	je gonext
-	cmp [si], dx
-	je gonext
-	jmp nonext
-gonext:
-jmp next
-nonext:
-	add si, 2
-	mov ax, [si]
-	add ax, 4
-
-	add di, 2
-	mov dx, [di]
-	cmp ax, dx
-	jb failx
-	add dx, enemy_width
-	cmp ax, dx
-	ja failx
-ycheck:
-	add si, 2
-	mov ax,[si]
-	add ax, 2
-	
-	add di,2
-	mov dx, [di]
-	cmp ax, dx
-	jb faily
-	add dx, enemy_height
-	cmp ax, dx
-	ja faily
-boom:
-	inc [dead_count]
-	add [score], 100d
-	sub si, 4
-	mov dx, [delete_projectile_id]
-	mov [si], dx
-	
-	sub di, 4
-	xor dx,dx
-	mov [di], dx
-
-	push enemy_height
-	push enemy_width
-	push offset dead
-	add di,2
-	push [di]
-	add di,2
-	push [di]
-	call draw_model
-	sub di,4
-	jmp next
-failx:
-	sub si, 2
-	sub di, 2
-	jmp next
-faily:
-	sub si, 4
-	sub di, 4
-next:
-	add si, 6
-	mov dx, si
-	sub dx, offset active_projectiles
-	cmp dx, max_active_projectiles
-	jb jump_shortcut
-	mov si, offset active_projectiles
-	add di, 6
-	mov dx, di
-	sub dx, offset active_enemies
-	cmp dx, max_active_enemies
-	ja fail
-jump_shortcut:
-	jmp xcheck
-fail:
-	pop bp
-	ret
-endp checkhit
 
 start:
     mov ax, @data
@@ -973,7 +998,6 @@ shots_annimation:
 	call projectiles_handler
 	call enemies_animation_handler
 	call enemies_direction_handler
-	call checkhit
 	
 	mov ah,2ch
     int 21h
