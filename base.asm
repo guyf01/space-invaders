@@ -667,25 +667,24 @@ proc enemies_animation_handler
 	cmp dx, inactive_enemy_id    		; If enemy status is inactive
 	je @@next_enemy						; Skip animation for inactive enemies
 
+	cmp [enemies_move_down], 0			; Check if enemies should move down
+	je @@direction_check				; No downward movement, proceed to direction check
+
+	mov dx, enemy_border_y_movement 	; Get movement step
+	add [si + 4], dx					; Add to Y position to move down
+
+@@direction_check:
 	cmp [enemies_moving_right], 1		; Check movement direction
 	je @@move_right						; Flag is set, move right
 
 @@move_left:
 	mov dx, enemy_tick_x_movement		; Get movement step
 	sub [si + 2], dx					; Subtract from X position to move left
-	jmp @@move_down_check				; Check for downward movement
+	jmp @@animate						; proceed to animation
 
 @@move_right:
 	mov dx, enemy_tick_x_movement		; Get movement step
 	add [si + 2], dx					; Add to X position to move right
-	jmp @@move_down_check				; Check for downward movement
-
-@@move_down_check:
-	cmp [enemies_move_down], 0			; Check if enemies should move down
-	je @@animate						; No downward movement, proceed to animation
-
-	mov dx, enemy_border_y_movement 	; Get movement step
-	add [si + 4], dx					; Add to Y position to move down
 
 @@animate:
 	push si								; Save pointer to current enemy
