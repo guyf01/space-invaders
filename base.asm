@@ -51,6 +51,10 @@ DATASEG
     enemy_width equ 12
     enemy_height equ 10
 	dead_count dw 0
+	enemies_right_boundary equ 280
+	enemies_left_boundary equ 20
+	enemies_floor_boundary equ 170
+	enemy_reached_bottom dw 0
 	enemies_moving_right dw 1
 	enemy_tick_x_movement equ 1
 	enemy_border_y_movement equ 3
@@ -559,6 +563,79 @@ proc projectiles_handler
 endp projectiles_handler
 
 
+proc enemies_direction_handler
+;--------------------------------------------------------
+; Purpose:    
+;             Handles the movement direction and boundary detection for all enemies.
+; Inputs:     
+;             None (operates on the `active_enemies` array).
+; Behavior:   
+;             - Iterates through the `active_enemies` array.
+;             - For each active enemy, checks its boundaries:
+;                 - Checks if the enemy has reached the bottom of the screen (Y >= enemies_floor_boundary).
+;                 - Checks if the enemy has reached the left boundary (X <= enemies_left_boundary).
+;                 - Checks if the enemy has reached the right boundary (X >= enemies_right_boundary).
+;             - Updates movement flags accordingly:
+;                 - `enemies_moving_right`: Toggles direction when hitting left or right boundary.
+;                 - `enemies_move_down`: Set when hitting left/right boundaries to move all enemies down.
+;                 - `enemy_reached_bottom`: Set if any enemy reaches the bottom of the screen.
+; Outputs:    
+;             - Updates the `enemies_moving_right` flag to change horizontal movement direction.
+;             - Updates the `enemies_move_down` flag to trigger vertical movement.
+;             - Updates the `enemy_reached_bottom` flag if any enemy reaches the floor.
+; Notes:
+;             - Each enemy's data structure is assumed to be organized as:
+;               [Status, X position, Y position].
+;             - Inactive enemies (Status = inactive_enemy_id) are skipped during processing.
+;             - The procedure stops processing on the first boundary condition encountered.
+;--------------------------------------------------------
+	push bp                          ; Save the base pointer
+	mov si, offset active_enemies    ; Start of `active_enemies` array (pointer to first enemy slot)
+
+@@enemy_loop:
+	mov dx, inactive_enemy_id        ; Load inactive enemy ID for comparison
+	cmp [si], dx                     ; If current enemy's Status == inactive, skip it
+	je @@next_enemy                  ; Jump to advance to the next slot
+
+@@check_floor:
+	mov dx, enemies_floor_boundary   ; Load bottom boundary constant
+	cmp [si + 4], dx                 ; Compare Y position (offset +4) with floor
+	jb @@check_left                  ; If Y < floor, continue boundary checks
+
+	mov [enemy_reached_bottom], 1    ; Enemy reached floor — set game-over flag
+	jmp @@exit                       ; Exit early; no further processing required
+
+@@check_left:
+	mov dx, enemies_left_boundary    ; Load left boundary constant
+	cmp [si + 2], dx                 ; Compare X position (offset +2) with left boundary
+	ja @@check_right                 ; If X > left boundary, check right side
+
+	mov [enemies_moving_right], 1    ; Set direction to move right
+	mov [enemies_move_down], 1       ; Request a move-down on next enemy update
+	jmp @@exit						 ; Exit early; no further processing required
+
+@@check_right:
+	mov dx, enemies_right_boundary   ; Load right boundary constant
+	cmp [si + 2], dx                 ; Compare X position with right boundary
+	jb @@next_enemy                  ; If X < right boundary, go to next enemy
+
+	mov [enemies_moving_right], 0    ; Clear moving-right flag — change direction to left
+	mov [enemies_move_down], 1       ; Request a move-down on next enemy update
+	jmp @@exit						 ; Exit early; no further processing required
+
+@@next_enemy:
+	add si, 6						 ; Move to the next enemy slot (each enemy is 6 bytes: Status, X, Y)
+	mov ax, si						 ; Load current position
+	sub ax, offset active_enemies	 ; Calculate the offset from the start of the array
+	cmp ax, max_active_enemies		 ; Check if we've reached the end of the array
+	jb @@enemy_loop					 ; Continue looping if not at the end
+
+@@exit:
+	pop bp							 ; Restore the base pointer
+	ret								 ; Clean up the stack and return
+endp enemies_direction_handler
+
+
 proc animate_enemy
 ;--------------------------------------------------------
 ; Purpose:
@@ -650,6 +727,11 @@ proc enemies_handler
 	cmp ax, max_active_enemies			; Check if we've reached the end of the array
 	jb @@enemy_loop						; Continue looping if not at the end
 
+	cmp [enemies_move_down], 0			; Reset move down flag after processing all enemies
+	je @@exit							; If already 0, exit
+	mov [enemies_move_down], 0			; Reset the flag
+
+@@exit:
 	pop bp								; Restore the base pointer
 	ret									; Clean up the stack and return
 endp enemies_handler
@@ -724,47 +806,6 @@ proc display_score
     pop bp                 ; Restore the base pointer
     ret                    ; Return from the procedure
 endp display_score
-
-
-proc echeck ;checks if the enemy touched the corners
-	push bp
-	mov bp, sp
-	mov ax, offset active_enemies
-@@cycle:
-	mov si, ax
-	add si, 2
-	
-	xor dx,dx
-	mov dx, 20
-	cmp [si], dx
-	ja noright
-	mov [enemies_moving_right], 1
-	mov [enemies_move_down], 1
-	jmp hell
-noright:
-	mov dx, 280
-	cmp [si], dx
-	jb ex
-	mov [enemies_moving_right], 0
-	mov [enemies_move_down], 1
-	jmp hell
-ex:
-	add si, 2
-	mov dx, 170
-	cmp [si], dx
-	jb notlost
-	mov [dead_count], 30
-notlost:	
-	add ax, 6
-	mov si, ax
-	sub si, offset active_enemies
-	cmp si, max_active_enemies
-	jb @@cycle 
-	mov [enemies_move_down], 0
-hell:
-	pop bp
-	ret 
-endp echeck
 
 
 proc checkhit
@@ -955,7 +996,7 @@ shots_annimation:
 	
 	call projectiles_handler
 	call enemies_handler
-	call echeck
+	call enemies_direction_handler
 	call checkhit
 	
 	mov ah,2ch
@@ -1022,7 +1063,7 @@ exitoffrange:
 victoycheck:
 	cmp [dead_count], 24
 	je win
-	cmp [dead_count], 30
+	cmp [enemy_reached_bottom], 1
 	je lose
 	jmp inputloop
 win:
