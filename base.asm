@@ -177,8 +177,8 @@ proc draw_pixel
 ;             [BP+8] - Y position
 ; Outputs:    None
 ;--------------------------------------------------------
-    push bp
-    mov bp, sp
+	push bp 			  ; Save the base pointer
+    mov bp, sp            ; Set up the stack frame
 
 	; setup configurations from stack
     mov al, [bp + 4]      ; Color of the pixel
@@ -189,8 +189,8 @@ proc draw_pixel
     mov ah, 0ch           ; BIOS interrupt for drawing a pixel
     int 10h               ; Call BIOS interrupt
 
-    pop bp
-    ret 6
+    pop bp                ; Restore the base pointer
+    ret 6                 ; Clean up the stack and return
 endp draw_pixel
 
 
@@ -243,7 +243,7 @@ proc draw_model
 	mov cx, dx
 	sub cx, [bp + 6]       	; cx = currX - startX
 	cmp cx, [bp + 10]      	; compare with width
-	jbe @@pixels_loop       	; if currX - startX <= width, continue row
+	jbe @@pixels_loop       ; if currX - startX <= width, continue row
 
 	; End of row: reset X and move down one Y
 	mov dx, [bp + 6]       	; reset X to startX
@@ -253,7 +253,7 @@ proc draw_model
 	mov cx, ax
 	sub cx, [bp + 4]       	; cx = currY - startY
 	cmp cx, [bp + 12]      	; compare with height
-	jbe @@pixels_loop       	; if currY - startY <= height, continue column
+	jbe @@pixels_loop       ; if currY - startY <= height, continue column
 
     pop bp                 	; Restore the base pointer
     ret 10                  ; Clean up the stack and return
@@ -268,26 +268,26 @@ proc print_string
 ;             [BP+8] - Pointer to the string in the data segment to print (word).
 ; Outputs:    None.
 ;--------------------------------------------------------
-    push bp
-    mov bp, sp
+	push bp 				; Save the base pointer
+    mov bp, sp				; Set up the stack frame
 
 	; setup configurations from stack
-    mov cx, [bp + 4]       ; Length of the string to print
-    mov dx, [bp + 6]       ; Screen location (row and column packed into a single word)
-    mov bp, [bp + 8]       ; Pointer to the string to print
-    mov bl, 00001111b      ; Set BL to the text color (white on black background)
-    mov al, 1              ; Set AL to 1 (String is written and the cursor position is updated)
+    mov cx, [bp + 4]		; Length of the string to print
+    mov dx, [bp + 6]		; Screen location (row and column packed into a single word)
+    mov bp, [bp + 8]        ; Pointer to the string to print
+    mov bl, 00001111b       ; Set BL to the text color (white on black background)
+    mov al, 1               ; Set AL to 1 (String is written and the cursor position is updated)
 
     ; Load data segment for the string
-    mov si, @data
-    mov es, si
+    mov si, @data			; Load data segment address
+    mov es, si				; Set ES to data segment
 
 	; execute BIOS interrupt
-    mov ah, 13h            ; BIOS interrupt for printing a string
-    int 10h                ; Call BIOS interrupt
+    mov ah, 13h             ; BIOS interrupt for printing a string
+    int 10h                 ; Call BIOS interrupt
 
-    pop bp
-    ret 6
+    pop bp                  ; Restore the base pointer
+    ret 6                   ; Clean up the stack and return
 endp print_string
 
 
@@ -356,48 +356,48 @@ proc register_projectile
 ;             - Updates the `active_projectiles` array with the new projectile's data.
 ;             - Resets the `ticks_since_last_projectile_registration` counter.
 ;--------------------------------------------------------
-    push bp
-    mov bp, sp
+    push bp                											; Save the base pointer
+    mov bp, sp             											; Set up the stack frame
 
     ; Check if enough time has passed since the last projectile
-    mov ax, [ticks_since_last_projectile_registration]
-    cmp ax, [minimum_ticks_between_projectiles]
-    jb @@exit ; Exit if not enough time has passed
+    mov ax, [ticks_since_last_projectile_registration]				; Load the ticks since last registration
+    cmp ax, [minimum_ticks_between_projectiles]						; Compare with minimum required ticks
+    jb @@exit 														; Exit if not enough time has passed
 
     ; Load the next available slot in the active_projectiles array
-    mov ax, [active_projectiles_next_slot]
-    sub ax, offset active_projectiles
-    cmp ax, max_active_projectiles
+    mov ax, [active_projectiles_next_slot]							; Load the pointer to the next available slot
+    sub ax, offset active_projectiles								; Calculate the offset from the start of the array
+    cmp ax, max_active_projectiles									; Check if we've reached the end of the array
     jb @@register
-    ; Reset to the start of the array if the end is reached
-    mov [active_projectiles_next_slot], offset active_projectiles
+
+    mov [active_projectiles_next_slot], offset active_projectiles	; Reset to the start of the array if the end is reached
 
 @@register:
-    mov si, [active_projectiles_next_slot]
+    mov si, [active_projectiles_next_slot]							; Load the pointer to the next available slot
 
     ; Store the projectile ID in the array
-    mov dx, [bp + 4]           ; Get the projectile ID from the stack
-    mov [si], dx               ; Store the projectile ID in the array
+    mov dx, [bp + 4]           										; Get the projectile ID from the stack
+    mov [si], dx             									  	; Store the projectile ID in the array
 
     ; Store the X position of the projectile
-    mov dx, [spaceship_curr_x] ; Get the spaceship's current X position
-    add dx, 2                  ; Adjust the X position for the projectile
-    mov [si + 2], dx           ; Store the adjusted X position in the array
+    mov dx, [spaceship_curr_x] 										; Get the spaceship's current X position
+    add dx, 2                  										; Adjust the X position for the projectile
+    mov [si + 2], dx           										; Store the adjusted X position in the array
 
     ; Store the Y position of the projectile
-    mov dx, [spaceship_curr_y] ; Get the spaceship's current Y position
-    sub dx, 12                 ; Adjust the Y position for the projectile
-    mov [si + 4], dx           ; Store the adjusted Y position in the array
+    mov dx, [spaceship_curr_y] 										; Get the spaceship's current Y position
+    sub dx, 12                 										; Adjust the Y position for the projectile
+    mov [si + 4], dx           										; Store the adjusted Y position in the array
 
     ; Update the next available slot pointer
-    add [active_projectiles_next_slot], 6
+    add [active_projectiles_next_slot], 6							; Move to the next slot (each projectile uses 6 bytes)
 
     ; Reset the ticks counter
-    mov [ticks_since_last_projectile_registration], 0
+    mov [ticks_since_last_projectile_registration], 0				; Reset the ticks since last registration	
 
 @@exit:
-    pop bp
-    ret 2                      ; Clean up the stack and return
+    pop bp                 											; Restore the base pointer
+    ret 2                 											; Clean up the stack and return
 endp register_projectile
 
 
@@ -424,53 +424,52 @@ proc animate_projectile
 ;               [ID, X position, Y position].
 ;             - If the projectile is marked for deletion, it is replaced with the `delete_projectile_model`.
 ;--------------------------------------------------------
-    push bp                ; Save the base pointer
-    mov bp, sp             ; Set up the stack frame
+    push bp               							; Save the base pointer
+    mov bp, sp             							; Set up the stack frame
 
-    mov si, [bp + 4]       ; Load the pointer to the projectile's data
-    mov dx, [si]           ; Load the projectile ID
+    mov si, [bp + 4]       							; Load the pointer to the projectile's data
+    mov dx, [si]          							; Load the projectile ID
 
-    cmp dx, [delete_projectile_id] ; Check if the projectile is marked for deletion
-    je @@delete
+    cmp dx, [delete_projectile_id] 					; Check if the projectile is marked for deletion
+    je @@delete										; Jump to deletion animation
 
-    cmp dx, [laser_id]     ; Check if the projectile is a laser
-    je @@laser
+    cmp dx, [laser_id]     							; Check if the projectile is a laser
+    je @@laser										; Jump to laser animation
 
-    cmp dx, [missile_id]   ; Check if the projectile is a missile
-    je @@missile
+    cmp dx, [missile_id]   							; Check if the projectile is a missile
+    je @@missile									; Jump to missile animation
 
-    jmp @@exit        ; Skip to the end if no match found
+    jmp @@exit        								; Skip to the end if no match found
 
 @@delete:
-    mov ax, [no_projectile_id] ; Mark the projectile as inactive
-    mov [si], ax
-    mov cx, offset delete_projectile_model ; Load the deletion model
-    jmp @@animate             ; Proceed to animate the deletion
+    mov ax, [no_projectile_id] 						; Mark the projectile as inactive
+    mov [si], ax				   					; Update the projectile ID to inactive
+    mov cx, offset delete_projectile_model			; Load the deletion model
+    jmp @@animate             						; Proceed to animate the deletion
 
 @@laser:
-    mov cx, offset laser_model ; Load the laser model
-    jmp @@animate
+    mov cx, offset laser_model 						; Load the laser model
+    jmp @@animate									; Proceed to animate the laser
 
 @@missile:
-    mov cx, offset missile_model ; Load the missile model
-    jmp @@animate
+    mov cx, offset missile_model 					; Load the missile model
+    jmp @@animate									; Proceed to animate the missile
 
 @@animate:
-    mov dx, projectile_tick_movement ; Load the movement step
-    sub [si + 4], dx           ; Update the Y position (move upward)
+    mov dx, projectile_tick_movement 				; Load the movement step
+    sub [si + 4], dx           						; Update the Y position (move upward)
 
-	; Push projectile dimensions and model to the stack
-	push projectile_height      ; Height of the projectile
-	push projectile_width      ; Width of the projectile
-    push cx                    ; Pointer to the projectile's model
-    push [si + 2]              ; Push the X position onto the stack
-    push [si + 4]              ; Push the updated Y position onto the stack
+	push projectile_height      					; Height of the projectile
+	push projectile_width     						; Width of the projectile
+    push cx                    						; Pointer to the projectile's model
+    push [si + 2]              						; Push the X position onto the stack
+    push [si + 4]              						; Push the updated Y position onto the stack
 
-    call draw_model             ; Call the procedure to redraw the projectile
+    call draw_model             					; Call the procedure to redraw the projectile
 
 @@exit:
-    pop bp                     ; Restore the base pointer
-    ret 2                      ; Clean up the stack and return
+    pop bp                     						; Restore the base pointer
+    ret 2                      						; Clean up the stack and return
 endp animate_projectile
 
 
@@ -494,39 +493,36 @@ proc projectile_hit_check
 ;             - This procedure assumes the projectile's data structure is organized as:
 ;               [ID, X position, Y position].
 ;--------------------------------------------------------
-    push bp                ; Save the base pointer
-    mov bp, sp             ; Set up the stack frame
+    push bp                				; Save the base pointer
+    mov bp, sp            	 			; Set up the stack frame
 
-    mov si, [bp + 4]       ; Load the pointer to the projectile's data
-    mov dx, [si]           ; Load the projectile ID
+    mov si, [bp + 4]       				; Load the pointer to the projectile's data
+    mov dx, [si]           				; Load the projectile ID
 
-    ; Check if the projectile id is not active
-    cmp dx, [no_projectile_id]
-    je @@exit
+    cmp dx, [no_projectile_id]			; Check if the projectile id is not active
+    je @@exit							; Exit if not active
 
-	; Check if the projectile id is marked for deletion
-    cmp dx, [delete_projectile_id]
-    je @@exit
+    cmp dx, [delete_projectile_id]		; Check if the projectile id is marked for deletion
+    je @@exit							; Exit if marked for deletion
 
 @@check_ceiling:
-    ; Check if the projectile has hit the ceiling
-    mov dx, 0
-    cmp [si + 4], dx       ; Compare Y position with 0 (ceiling)
-    ja @@exit       ; If below the ceiling, skip
+    mov dx, 0							; Load 0 (ceiling Y position)
+    cmp [si + 4], dx       				; Compare Y position with 0 (ceiling)
+    ja @@exit       					; If below the ceiling, skip
 
-    ; Mark the projectile for deletion
-    mov dx, [delete_projectile_id]
-    mov [si], dx
+	; Mark the projectile for deletion
+    mov dx, [delete_projectile_id]		; Load delete projectile ID
+    mov [si], dx						; Update the projectile ID to mark for deletion
 
     ; Penalize score if the projectile missed
-    cmp [score], 0
-    jbe @@exit      ; Skip if score is already 0 or negative
-    mov dx, [missed_shot_score_penalty]
-    sub [score], dx        ; Deduct penalty from score
+    cmp [score], 0						; Check if score is 0 or negative
+    jbe @@exit      					; Skip if score is already 0 or negative
+    mov dx, [missed_shot_score_penalty] ; Load the penalty value
+    sub [score], dx        				; Deduct penalty from score
 
 @@exit:
-    pop bp                 ; Restore the base pointer
-    ret 2                  ; Clean up the stack and return
+    pop bp                 				; Restore the base pointer
+    ret 2                  				; Clean up the stack and return
 endp projectile_hit_check
 
 
@@ -858,7 +854,7 @@ proc display_score
 
 @@find_digits:
     cmp ax, 0              ; Check if the score division result is 0
-    je @@zero_fill           ; If 0, jump to zero-padding logic
+    je @@zero_fill         ; If 0, jump to zero-padding logic
 
     xor dx, dx             ; Clear DX (remainder)
     mov bx, 10             ; Set divisor to 10
@@ -866,18 +862,18 @@ proc display_score
 
     push dx                ; Push the remainder (digit) onto the stack
     inc cx                 ; Increment the digit counter
-    jmp @@find_digits        ; Repeat until the score is fully converted
+    jmp @@find_digits      ; Repeat until the score is fully converted
 
 @@zero_fill:
     cmp cx, 4              ; Check if the score has at least 4 digits
-    jae @@print_digits       ; If yes, jump to printing digits
+    jae @@print_digits     ; If yes, jump to printing digits
     push 0                 ; Push a zero onto the stack
     inc cx                 ; Increment the digit counter
-    jmp @@zero_fill          ; Repeat until 4 digits are reached
+    jmp @@zero_fill        ; Repeat until 4 digits are reached
 
 @@print_digits:
     cmp cx, 0              ; Check if there are digits to print
-    je @@exit           ; If no digits, finish
+    je @@exit              ; If no digits, finish
 
     pop dx                 ; Pop the next digit from the stack
     add dx, 48             ; Convert the digit to its ASCII representation
@@ -886,7 +882,7 @@ proc display_score
     int 21h                ; Call BIOS interrupt
 
     dec cx                 ; Decrement the digit counter
-    jmp @@print_digits       ; Repeat until all digits are printed
+    jmp @@print_digits     ; Repeat until all digits are printed
 
 @@exit:
     pop bp                 ; Restore the base pointer
