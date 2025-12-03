@@ -265,7 +265,7 @@ proc register_projectile
 ;--------------------------------------------------------
 ; Purpose:    Registers a projectile into the active_projectiles array.
 ; Inputs:     
-;             [BP + 4] - The ID of the projectile.
+;             [BP + 4] - The key pressed on the keyboard representing the projectile type.
 ; Behavior:   
 ;             - Checks if enough time has passed since the last projectile was registered.
 ;             - Adds the projectile's ID, X position, and Y position to the 
@@ -283,6 +283,21 @@ proc register_projectile
     cmp ax, [minimum_ticks_between_projectiles]						; Compare with minimum required ticks
     jb @@exit 														; Exit if not enough time has passed
 
+	mov ax, [bp + 4]           										; Get the key pressed from the stack
+
+	cmp al, 'e'														; Check if key is 'e'
+	jne @@check_missile												; If not, check for 'q'
+
+	mov dx, [laser_id]         										; Load laser projectile ID
+	jmp @@load_active_slot											; Proceed to load active slot
+
+@@check_missile:
+	cmp al, 'q'														; Check if key is 'q'
+	jne @@exit														; Exit if key is neither 'e' nor 'q'
+
+	mov dx, [missile_id]       										; Load missile projectile ID
+
+@@load_active_slot:
     ; Load the next available slot in the active_projectiles array
     mov ax, [active_projectiles_next_slot]							; Load the pointer to the next available slot
     sub ax, offset active_projectiles								; Calculate the offset from the start of the array
@@ -295,7 +310,6 @@ proc register_projectile
     mov si, [active_projectiles_next_slot]							; Load the pointer to the next available slot
 
     ; Store the projectile ID in the array
-    mov dx, [bp + 4]           										; Get the projectile ID from the stack
     mov [si], dx             									  	; Store the projectile ID in the array
 
     ; Store the X position of the projectile
@@ -1131,25 +1145,12 @@ inputloop:
     int 16h
 	
 	push ax									; Save the input
+	push ax									; Pass the input register projectile registration
 	push ax									; Pass the input to spaceship movement handler
 	call spaceship_movement_handler			; Handle spaceship movement
+	call register_projectile				; Register projectile if shooting key pressed
 	pop ax									; Restore the input
 
-NotRight:
-	cmp al, 'q'
-	jne NotMissile
-
-	push [missile_id]
-	call register_projectile
-	jmp shots_annimation
-NotMissile:
-	cmp al, 'e'
-	jne NotLaser
-	
-	push [laser_id]
-	call register_projectile
-	jmp	shots_annimation
-NotLaser:
 	cmp al, 'p'
 	jne exitoffrange
 	jmp exit
