@@ -34,6 +34,7 @@ DATASEG
 	spaceship_curr_x dw 130
 	spaceship_curr_y dw 180
 
+	spaceship_move_step equ 2
 	spaceship_width equ 12
 	spaceship_height equ 10
 	spaceship_model		db 00,00,00,00,00,00,02,00,00,00,00,00,00
@@ -1034,6 +1035,62 @@ proc display_guide_page
 endp display_guide_page
 
 
+proc spaceship_movement_handler
+;--------------------------------------------------------
+; Purpose:
+;             Handles the movement of the spaceship based on player input.
+; Inputs:
+;             [BP + 4] - Key input character.
+; Behavior:
+;             - Moves the spaceship left if 'a' is pressed.
+;             - Moves the spaceship right if 'd' is pressed.
+; Outputs:
+;             - Updates the spaceship's position on the screen.
+;			  - redraws the spaceship at the new position.
+; Notes:
+;             - The spaceship cannot move beyond the screen boundaries.
+;--------------------------------------------------------
+	push bp                 				; Save the base pointer
+	mov bp, sp              				; Set up the stack frame
+
+	mov ax, [bp + 4]       					; Load the key input character
+
+	cmp al, 'a'            					; Check if 'a' (move left) was pressed
+	jne @@check_right						; If not, check for right movement
+
+	mov dx, left_boundary					; Load left boundary
+	cmp [spaceship_curr_x], dx				; Compare current X position with left boundary
+	jbe @@animate							; If at or beyond left boundary, skip movement
+
+	mov dx, spaceship_move_step				; Load movement step
+	sub [spaceship_curr_x], dx				; Move spaceship left
+	jmp @@animate							; Proceed to animation
+
+@@check_right:
+	cmp al, 'd'            					; Check if 'd' (move right) was pressed
+	jne @@animate							; If not, skip movement
+
+	mov dx, right_boundary					; Load right boundary
+	cmp [spaceship_curr_x], dx				; Compare current X position with right boundary
+	jae @@animate							; If at or beyond right boundary, skip movement
+
+	mov dx, spaceship_move_step				; Load movement step
+	add [spaceship_curr_x], dx				; Move spaceship right
+
+@@animate:
+	push spaceship_height					; Pass spaceship height
+	push spaceship_width					; Pass spaceship width
+	push offset spaceship_model				; Pass pointer to spaceship model
+	push [spaceship_curr_x]					; Pass current X position
+	push [spaceship_curr_y]					; Pass current Y position
+	call draw_model							; Draw the spaceship model
+
+	pop bp                  				; Restore the base pointer
+	ret 2                    				; Clean up the stack and return
+endp spaceship_movement_handler
+
+
+
 start:
     mov ax, @data 							; Initialize data segment
     mov ds, ax
@@ -1044,13 +1101,9 @@ start:
 	call difficulty_select					; Call difficulty selection procedure
 	call display_guide_page					; Call display guide page procedure
 
-	shipandammo:
-	push spaceship_height
-	push spaceship_width
-	push offset spaceship_model
-	push [spaceship_curr_x]
-	push [spaceship_curr_y]
-	call draw_model
+	push 0									; Pass meaningless value to initialize spaceship position
+	call spaceship_movement_handler			; Initialize spaceship position
+
 shots_annimation:  
     mov ah,2ch
     int 21h
@@ -1077,33 +1130,11 @@ inputloop:
     mov ah, 0 
     int 16h
 	
-	cmp al, 'a'
-	jne NotLeft
-	cmp [spaceship_curr_x], 20
-	jbe NotLeft
-	sub [spaceship_curr_x],2 
-	push spaceship_height
-	push spaceship_width
-	push offset spaceship_model
-	push [spaceship_curr_x]
-	push [spaceship_curr_y]
-	call draw_model
-	jmp shots_annimation
+	push ax									; Save the input
+	push ax									; Pass the input to spaceship movement handler
+	call spaceship_movement_handler			; Handle spaceship movement
+	pop ax									; Restore the input
 
-NotLeft:
-	cmp al, 'd'
-	jne NotRight
-	cmp [spaceship_curr_x], 280 
-	jae NotRight
-	add [spaceship_curr_x],2 
-	push spaceship_height
-	push spaceship_width
-	push offset spaceship_model
-	push [spaceship_curr_x]
-	push [spaceship_curr_y]
-	call draw_model
-	jmp shots_annimation
-	
 NotRight:
 	cmp al, 'q'
 	jne NotMissile
