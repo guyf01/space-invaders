@@ -26,6 +26,8 @@ DATASEG
 	win_criteria_msg db 'Score over 2000 to win'
 	game_lost_msg db 'Game over, You Lose'
 	game_won_msg db 'Game over, You Win'
+	right_boundary equ 280
+	left_boundary equ 20
 ; ------------------
 ; ship variables
 ; ------------------
@@ -51,8 +53,6 @@ DATASEG
     enemy_width equ 12
     enemy_height equ 10
 	dead_count dw 0
-	enemies_right_boundary equ 280
-	enemies_left_boundary equ 20
 	enemies_floor_boundary equ 170
 	enemy_reached_bottom dw 0
 	enemies_moving_right dw 1
@@ -582,8 +582,8 @@ proc enemies_direction_handler
 ;             - Iterates through the `active_enemies` array.
 ;             - For each active enemy, checks its boundaries:
 ;                 - Checks if the enemy has reached the bottom of the screen (Y >= enemies_floor_boundary).
-;                 - Checks if the enemy has reached the left boundary (X <= enemies_left_boundary).
-;                 - Checks if the enemy has reached the right boundary (X >= enemies_right_boundary).
+;                 - Checks if the enemy has reached the left boundary (X <= left_boundary).
+;                 - Checks if the enemy has reached the right boundary (X >= right_boundary).
 ;             - Updates movement flags accordingly:
 ;                 - `enemies_moving_right`: Toggles direction when hitting left or right boundary.
 ;                 - `enemies_move_down`: Set when hitting left/right boundaries to move all enemies down.
@@ -619,7 +619,7 @@ proc enemies_direction_handler
 	jmp @@exit                       ; Exit early; no further processing required
 
 @@check_left:
-	mov dx, enemies_left_boundary    ; Load left boundary constant
+	mov dx, left_boundary    		 ; Load left boundary constant
 	cmp [si + 2], dx                 ; Compare X position (offset +2) with left boundary
 	ja @@check_right                 ; If X > left boundary, check right side
 
@@ -628,7 +628,7 @@ proc enemies_direction_handler
 	jmp @@exit						 ; Exit early; no further processing required
 
 @@check_right:
-	mov dx, enemies_right_boundary   ; Load right boundary constant
+	mov dx, right_boundary   		 ; Load right boundary constant
 	cmp [si + 2], dx                 ; Compare X position with right boundary
 	jb @@next_enemy                  ; If X < right boundary, go to next enemy
 
