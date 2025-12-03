@@ -982,8 +982,56 @@ proc difficulty_select
 	call clear_screen						; Clear the screen after selection
 
 	pop bp                  				; Restore the base pointer
-	ret                     				; Return from the procedure
+	ret                     				; Clean up the stack and return
 endp difficulty_select
+
+
+proc display_guide_page
+;--------------------------------------------------------
+; Purpose:
+;             Displays the game guide page with instructions.
+; Inputs:
+;             None.
+; Behavior:
+;             - Displays various instructional messages on the screen.
+; Outputs:
+;             - The guide page is displayed until the player presses the space bar.
+;--------------------------------------------------------
+	push bp                 				; Save the base pointer
+	mov bp, sp              				; Set up the stack frame
+
+	push offset start_guide_msg				; Display start guide message
+	push 409h								; Screen position
+	push 20									; Length of the message
+	call print_string
+
+	push offset movement_guide_msg			; Display movement guide message
+	push 809h								; Screen position
+	push 19									; Length of the message
+	call print_string
+
+	push offset shooting_guide_msg			; Display shooting guide message
+	push 0c09h								; Screen position
+	push 20									; Length of the message
+	call print_string
+
+	push offset win_criteria_msg			; Display win criteria message
+	push 1008h								; Screen position
+	push 22									; Length of the message
+	call print_string
+
+@@get_input:
+    mov ah, 0 								; Wait for keyboard input
+    int 16h									; BIOS interrupt to read keyboard input
+
+	cmp al, ' '								; Check if space bar was pressed
+	jne @@get_input							; If not, wait again
+
+	call clear_screen						; Clear the screen after exiting guide
+
+	pop bp                  				; Restore the base pointer
+	ret                     				; Clean up the stack and return
+endp display_guide_page
 
 
 start:
@@ -994,43 +1042,8 @@ start:
     int 10h									; BIOS interrupt to set video mode
 
 	call difficulty_select					; Call difficulty selection procedure
+	call display_guide_page					; Call display guide page procedure
 
-	;starting page
-	push offset start_guide_msg
-	push 409h
-	push 20
-	call print_string
-	push offset movement_guide_msg
-	push 809h
-	push 19
-	call print_string
-	push offset shooting_guide_msg
-	push 0c09h
-	push 20
-	call print_string
-	push offset win_criteria_msg
-	push 1008h
-	push 22
-	call print_string
-	
-	
-start?:
-	mov ah, 1
-    int 16h ;checking for input
-    jz start? ;no input:looping
-
-    mov ah, 0 ;saving the input
-    int 16h
-	cmp al, ' '
-	jne start?
-	
-	mov ax,0600h    
-	mov BH,00h    
-	mov CX,0000h    
-	mov DX,184fh    
-    int 10h        
-	mov ax, 0600h
-	int 10h
 	shipandammo:
 	push spaceship_height
 	push spaceship_width
