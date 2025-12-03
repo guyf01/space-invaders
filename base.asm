@@ -1106,40 +1106,39 @@ endp spaceship_movement_handler
 
 
 start:
-    mov ax, @data 							; Initialize data segment
+    mov ax, @data 										; Initialize data segment
     mov ds, ax
 	
-    mov ax, 0013h 							; Set video mode 13h (320x200, 256 colors)
-    int 10h									; BIOS interrupt to set video mode
+    mov ax, 0013h 										; Set video mode 13h (320x200, 256 colors)
+    int 10h												; BIOS interrupt to set video mode
 
-	call difficulty_select					; Call difficulty selection procedure
-	call display_guide_page					; Call display guide page procedure
+	call difficulty_select								; Call difficulty selection procedure
+	call display_guide_page								; Call display guide page procedure
 
-	push 0									; Pass meaningless value to initialize spaceship position
-	call spaceship_movement_handler			; Initialize spaceship position
+	push 0												; Pass meaningless value to initialize spaceship position
+	call spaceship_movement_handler						; Initialize spaceship position
 
-shots_annimation:  
-    mov ah,2ch
+tick_loop:  
+    mov ah, 2ch											; Get system time
     int 21h
-    cmp [time],dl
-    je noshot
-	
-	inc [ticks_since_last_projectile_registration]
-	
-	call projectiles_handler
-	call enemies_animation_handler
-	call enemies_direction_handler
-	
-	mov ah,2ch
-    int 21h
-    mov [time], dl
-noshot:
+    cmp [time], dl										; Compare current time with last recorded time
+    je flow_control_actions								; If equal, skip to flow control actions
+
+tick_actions:
+    mov [time], dl										; Update last recorded time
+	inc [ticks_since_last_projectile_registration]		; Increment ticks since last projectile registration
+	call projectiles_handler							; Handle projectiles
+
+	call enemies_direction_handler						; Handle enemy movement direction and boundaries
+	call enemies_animation_handler						; Animate enemies
+
+flow_control_actions:
 	call display_score
 	jmp victoycheck
 inputloop:
 	mov ah, 1
     int 16h 
-    jz shots_annimation 
+    jz tick_loop 
 
     mov ah, 0 
     int 16h
@@ -1155,7 +1154,7 @@ inputloop:
 	jne exitoffrange
 	jmp exit
 exitoffrange:	
-	jmp shots_annimation 
+	jmp tick_loop 
 victoycheck:
 	cmp [dead_count], 24
 	je win
