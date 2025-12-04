@@ -1133,47 +1133,45 @@ tick_actions:
 	call enemies_animation_handler						; Animate enemies
 
 flow_control_actions:
-	call display_score
-	jmp victoycheck
-inputloop:
-	mov ah, 1
-    int 16h 
-    jz tick_loop 
+	call display_score									; Display the current score
 
-    mov ah, 0 
+	mov ah, 1											; Check for keyboard input
+    int 16h 											; BIOS interrupt to read keyboard input
+    jz game_end_check 									; If no input, check for game end conditions
+
+    mov ah, 0											; Read the keyboard input
     int 16h
 	
-	push ax									; Save the input
-	push ax									; Pass the input register projectile registration
-	push ax									; Pass the input to spaceship movement handler
-	call spaceship_movement_handler			; Handle spaceship movement
-	call register_projectile				; Register projectile if shooting key pressed
-	pop ax									; Restore the input
+	push ax												; Pass the input register projectile registration
+	push ax												; Pass the input to spaceship movement handler
+	call spaceship_movement_handler						; Handle spaceship movement
+	call register_projectile							; Register projectile if shooting key pressed
 
-	cmp al, 'p'
-	jne exitoffrange
-	jmp exit
-exitoffrange:	
-	jmp tick_loop 
-victoycheck:
-	cmp [dead_count], 24
-	je win
-	cmp [enemy_reached_bottom], 1
-	je lose
-	jmp inputloop
-win:
-	cmp [score], 2000
-	jb lose
-	push offset game_won_msg
-	push 709h
-	push 18
-	call print_string
+game_end_check:
+	cmp [dead_count], 24								; Check if all enemies are dead
+	jb check_enemy_reached_bottom						; If not all dead, continue
+
+	cmp [score], 2000									; Check if score is at least 2000
+	jb lose_screen										; If score < 2000, go to lose screen
+
+win_screen:
+	push offset game_won_msg							; Pass game won message
+	push 709h											; Screen position
+	push 18												; Length of the message
+	call print_string									; Display game won message
+	jmp outO		
+
+check_enemy_reached_bottom:	
+	cmp [enemy_reached_bottom], 1						; Check if any enemy reached the bottom
+	jne tick_loop										; If not, continue game loop
+
+lose_screen:
+	push offset game_lost_msg							; Pass game lost message
+	push 709h											; Screen position
+	push 19												; Length of the message
+	call print_string									; Display game lost message
 	jmp outO
-lose:
-	push offset game_lost_msg
-	push 709h
-	push 19
-	call print_string
+
 outO:
 	mov ah,2ch
     int 21h
