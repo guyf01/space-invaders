@@ -2,163 +2,158 @@ IDEAL
 MODEL small
 STACK 100h
 DATASEG
-;------------------
-; Game data
-;------------------
-	score dw 0
-	missed_shot_score_penalty dw ?
-	score_msg db 'Score - '
-	ez_difficult_msg db 'for easy press 1'
-	medium_difficult_msg db 'for medium press 2'
-	hard_difficult_msg db 'for hard press 3'
-	start_guide_msg db 'Press space to start'
-	movement_guide_msg db 'Press a & d to move'
-	shooting_guide_msg db 'Press e & q to shoot'
-	win_criteria_msg db 'Score over 2000 to win'
-	game_lost_msg db 'Game over, You Lose'
-	game_won_msg db 'Game over, You Win'
-	right_boundary equ 280
-	left_boundary equ 20
-; ------------------
-; ship variables
-; ------------------
-	spaceship_curr_x dw 130
-	spaceship_curr_y dw 180
+;------------------------------------------------------------
+; Game state / meta
+;------------------------------------------------------------
+    score                       dw 0
+    missed_shot_score_penalty   dw ?
+    time                        db ?
+    dead_count                  dw 0
+    enemy_reached_bottom        dw 0
 
-	spaceship_move_step equ 2
-	spaceship_width equ 12
-	spaceship_height equ 10
-	spaceship_model		db 00,00,00,00,00,00,02,00,00,00,00,00,00
-						db 00,00,00,00,00,02,02,02,00,00,00,00,00
-						db 00,00,00,00,00,02,00,02,00,00,00,00,00
-						db 00,00,00,00,00,02,00,02,00,00,00,00,00
-						db 00,00,00,00,00,02,02,02,00,00,00,00,00
-						db 00,00,00,02,00,02,02,02,00,02,00,00,00
-						db 00,00,02,02,02,02,02,02,02,02,02,00,00
-						db 00,00,02,02,02,02,02,02,02,02,02,00,00
-						db 00,00,02,02,02,02,02,02,02,02,02,00,00
-						db 00,00,02,02,00,02,02,02,00,02,02,00,00
-						db 00,00,00,00,00,00,02,00,00,00,00,00,00
-;------------------
-; Enemy variables
-;------------------
-    enemy_width equ 12
-    enemy_height equ 10
-	dead_count dw 0
-	enemies_floor_boundary equ 170
-	enemy_reached_bottom dw 0
-	enemies_moving_right dw 1
-	enemy_tick_x_movement equ 1
-	enemy_border_y_movement equ 3
-	enemies_move_down dw 0
-	enemy_score_value equ 100
-	max_active_enemies equ 144
-	active_enemies 	dw 2,40,20
-					dw 2,80,20
-					dw 2,120,20
-					dw 2,160,20
-					dw 2,200,20
-					dw 2,240,20
-					dw 2,40,50
-					dw 2,80,50
-					dw 2,120,50
-					dw 2,160,50
-					dw 2,200,50
-					dw 2,240,50
-					dw 2,40,80
-					dw 2,80,80
-					dw 2,120,80
-					dw 2,160,80
-					dw 2,200,80
-					dw 2,240,80
-					dw 2,40,110
-					dw 2,80,110
-					dw 2,120,110
-					dw 2,160,110
-					dw 2,200,110
-					dw 2,240,110
+;------------------------------------------------------------
+; Messages
+;------------------------------------------------------------
+    score_msg                   db 'Score - '
+    start_guide_msg             db 'Press space to start'
+    movement_guide_msg          db 'Press a & d to move'
+    shooting_guide_msg          db 'Press e & q to shoot'
+    win_criteria_msg            db 'Score over 2000 to win'
+    game_lost_msg               db 'Game over, You Lose'
+    game_won_msg                db 'Game over, You Win'
+    ez_difficult_msg            db 'for easy press 1'
+    medium_difficult_msg        db 'for medium press 2'
+    hard_difficult_msg          db 'for hard press 3'
 
-	inactive_enemy_id equ 0
+;------------------------------------------------------------
+; General movement boundaries
+;------------------------------------------------------------
+    right_boundary              equ 280
+    left_boundary               equ 20
 
-	delete_enemy_id equ 1
-	delete_enemy_model 		db 00,00,00,00,00,00,00,00,00,00,00,00,00
-							db 00,00,00,00,00,00,00,00,00,00,00,00,00
-							db 00,00,00,00,00,00,00,00,00,00,00,00,00
-							db 00,00,00,00,00,00,00,00,00,00,00,00,00
-							db 00,00,00,00,00,00,00,00,00,00,00,00,00
-							db 00,00,00,00,00,00,00,00,00,00,00,00,00
-							db 00,00,00,00,00,00,00,00,00,00,00,00,00
-							db 00,00,00,00,00,00,00,00,00,00,00,00,00
-							db 00,00,00,00,00,00,00,00,00,00,00,00,00
-							db 00,00,00,00,00,00,00,00,00,00,00,00,00
-							db 00,00,00,00,00,00,00,00,00,00,00,00,00
+;------------------------------------------------------------
+; Player (spaceship)
+;------------------------------------------------------------
+    spaceship_curr_x            dw 130
+    spaceship_curr_y            dw 180
+    spaceship_move_step         equ 2
+    spaceship_width             equ 12
+    spaceship_height            equ 10
+    spaceship_model             db 00,00,00,00,00,00,02,00,00,00,00,00,00
+                                db 00,00,00,00,00,02,02,02,00,00,00,00,00
+                                db 00,00,00,00,00,02,00,02,00,00,00,00,00
+                                db 00,00,00,00,00,02,00,02,00,00,00,00,00
+                                db 00,00,00,00,00,02,02,02,00,00,00,00,00
+                                db 00,00,00,02,00,02,02,02,00,02,00,00,00
+                                db 00,00,02,02,02,02,02,02,02,02,02,00,00
+                                db 00,00,02,02,02,02,02,02,02,02,02,00,00
+                                db 00,00,02,02,02,02,02,02,02,02,02,00,00
+                                db 00,00,02,02,00,02,02,02,00,02,02,00,00
+                                db 00,00,00,00,00,00,02,00,00,00,00,00,00
 
-	active_enemy_id equ 2
-	active_enemy_model		db 00,00,00,00,00,00,00,00,00,00,00,00,00
-							db 00,00,00,00,00,00,00,00,00,00,00,00,00
-							db 00,00,00,00,00,00,00,00,00,00,00,00,00
-							db 00,00,00,11,00,00,00,00,00,11,00,00,00
-							db 00,00,00,00,11,00,00,00,11,00,00,00,00
-							db 00,00,00,11,11,11,11,11,11,11,00,00,00
-							db 00,00,11,11,00,11,11,11,00,11,11,00,00
-							db 00,11,11,11,11,11,11,11,11,11,11,11,00
-							db 00,11,00,11,11,11,11,11,11,11,00,11,00
-							db 00,11,00,11,00,00,00,00,00,11,00,11,00
-							db 00,00,00,00,11,11,00,11,11,00,00,00,00
+;------------------------------------------------------------
+; Enemy configuration
+;------------------------------------------------------------
+    enemy_width                 equ 12
+    enemy_height                equ 10
+    enemy_tick_x_movement       equ 1
+    enemy_border_y_movement     equ 3
+    enemy_score_value           equ 100
+    enemies_floor_boundary      equ 170
+    enemies_moving_right        dw 1
+    enemies_move_down           dw 0
+    max_active_enemies          equ 144         ; bytes (24 enemies * 6 bytes)
+    inactive_enemy_id           equ 0
+    delete_enemy_id             equ 1
+    active_enemy_id             equ 2
 
-; ------------------
-; projectile variables
-; ------------------
-    projectile_width equ 7
-    projectile_height equ 10
-	active_projectiles dw 10 dup (0,0,0) 
-	max_active_projectiles equ 60
-	active_projectiles_next_slot dw offset active_projectiles
-	time db 5
-	projectile_tick_movement equ 2
-	ticks_since_last_projectile_registration dw 0
-	minimum_ticks_between_projectiles dw 9
+    ; active_enemies: [status, x, y] * 24
+    active_enemies              dw 2,40,20
+                                dw 2,80,20
+                                dw 2,120,20
+                                dw 2,160,20
+                                dw 2,200,20
+                                dw 2,240,20
 
-	no_projectile_id equ 0
+                                dw 2,40,50
+                                dw 2,80,50
+                                dw 2,120,50
+                                dw 2,160,50
+                                dw 2,200,50
+                                dw 2,240,50
 
-	delete_projectile_id equ 1
-	delete_projectile_model			db 00,00,00,00,00,00,00,00
-									db 00,00,00,00,00,00,00,00
-									db 00,00,00,00,00,00,00,00
-									db 00,00,00,00,00,00,00,00
-									db 00,00,00,00,00,00,00,00
-									db 00,00,00,00,00,00,00,00
-									db 00,00,00,00,00,00,00,00
-									db 00,00,00,00,00,00,00,00
-									db 00,00,00,00,00,00,00,00
-									db 00,00,00,00,00,00,00,00
-									db 00,00,00,00,00,00,00,00
+                                dw 2,40,80
+                                dw 2,80,80
+                                dw 2,120,80
+                                dw 2,160,80
+                                dw 2,200,80
+                                dw 2,240,80
 
-	laser_id equ 2
-	laser_model		    			db 00,00,00,00,15,00,00,00
-									db 00,00,00,15,12,15,00,00
-									db 00,00,00,15,12,15,00,00
-									db 00,00,00,15,12,15,00,00
-									db 00,00,00,15,12,15,00,00
-									db 00,00,00,15,12,15,00,00
-									db 00,00,00,15,12,15,00,00
-									db 00,00,00,00,15,00,00,00
-									db 00,00,00,00,00,00,00,00
-									db 00,00,00,00,00,00,00,00
-									db 00,00,00,00,00,00,00,00
+                                dw 2,40,110
+                                dw 2,80,110
+                                dw 2,120,110
+                                dw 2,160,110
+                                dw 2,200,110
+                                dw 2,240,110
 
-	missile_id equ 3
-	missile_model					db 00,00,00,03,03,00,00,00
-									db 00,00,00,08,08,00,00,00
-									db 00,00,00,03,03,00,00,00
-									db 00,00,00,03,03,00,00,00
-									db 00,00,00,08,08,00,00,00
-									db 00,00,03,03,03,03,00,00
-									db 00,03,03,03,03,03,03,00
-									db 00,03,03,00,00,03,03,00
-									db 00,03,00,00,00,00,03,00
-									db 00,00,00,00,00,00,00,00
-									db 00,00,00,00,00,00,00,00
+    ; enemy models (active / delete)
+    delete_enemy_model          db 11*13 dup (00)      ; zeroed 13x11 block (keeps layout compact)
+    active_enemy_model          db 00,00,00,00,00,00,00,00,00,00,00,00,00
+                                db 00,00,00,00,00,00,00,00,00,00,00,00,00
+                                db 00,00,00,00,00,00,00,00,00,00,00,00,00
+                                db 00,00,00,11,00,00,00,00,00,11,00,00,00
+                                db 00,00,00,00,11,00,00,00,11,00,00,00,00
+                                db 00,00,00,11,11,11,11,11,11,11,00,00,00
+                                db 00,00,11,11,00,11,11,11,00,11,11,00,00
+                                db 00,11,11,11,11,11,11,11,11,11,11,11,00
+                                db 00,11,00,11,11,11,11,11,11,11,00,11,00
+                                db 00,11,00,11,00,00,00,00,00,11,00,11,00
+                                db 00,00,00,00,11,11,00,11,11,00,00,00,00
+
+;------------------------------------------------------------
+; Projectiles
+;------------------------------------------------------------
+    projectile_width            equ 7
+    projectile_height           equ 10
+    projectile_tick_movement    equ 2
+    minimum_ticks_between_projectiles dw 9
+    ticks_since_last_projectile_registration dw 0
+
+    no_projectile_id            equ 0
+    delete_projectile_id        equ 1
+    laser_id                    equ 2
+    missile_id                  equ 3
+
+    ; active_projectiles: each = [id (word), x (word), y (word)] -> 6 bytes
+    max_active_projectiles      equ 60          ; bytes
+    active_projectiles          dw 10 dup (0,0,0)
+    active_projectiles_next_slot dw offset active_projectiles
+
+    ; projectile models
+    delete_projectile_model     db 11*10 dup (00)    ; zeroed 8x11 (keeps layout compact)
+    laser_model                 db 00,00,00,00,15,00,00,00
+                                db 00,00,00,15,12,15,00,00
+                                db 00,00,00,15,12,15,00,00
+                                db 00,00,00,15,12,15,00,00
+                                db 00,00,00,15,12,15,00,00
+                                db 00,00,00,15,12,15,00,00
+                                db 00,00,00,15,12,15,00,00
+                                db 00,00,00,00,15,00,00,00
+                                db 00,00,00,00,00,00,00,00
+                                db 00,00,00,00,00,00,00,00
+                                db 00,00,00,00,00,00,00,00
+
+    missile_model               db 00,00,00,03,03,00,00,00
+                                db 00,00,00,08,08,00,00,00
+                                db 00,00,00,03,03,00,00,00
+                                db 00,00,00,03,03,00,00,00
+                                db 00,00,00,08,08,00,00,00
+                                db 00,00,03,03,03,03,00,00
+                                db 00,03,03,03,03,03,03,00
+                                db 00,03,03,00,00,03,03,00
+                                db 00,03,00,00,00,00,03,00
+                                db 00,00,00,00,00,00,00,00
+                                db 00,00,00,00,00,00,00,00
 
 CODESEG
 proc draw_pixel
