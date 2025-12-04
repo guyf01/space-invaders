@@ -3,15 +3,6 @@ MODEL small
 STACK 100h
 DATASEG
 ;------------------
-; Sound data
-;------------------
-	cn db 1
-	note1 dw 1436h 
-	note2 dw 1917h 
-	note3 dw 2873h 
-	note4 dw 2559h
-	stop db ?
-;------------------
 ; Game data
 ;------------------
 	score dw 0
@@ -288,14 +279,14 @@ proc register_projectile
 	cmp al, 'e'														; Check if key is 'e'
 	jne @@check_missile												; If not, check for 'q'
 
-	mov dx, [laser_id]         										; Load laser projectile ID
+	mov dx, laser_id         										; Load laser projectile ID
 	jmp @@load_active_slot											; Proceed to load active slot
 
 @@check_missile:
 	cmp al, 'q'														; Check if key is 'q'
 	jne @@exit														; Exit if key is neither 'e' nor 'q'
 
-	mov dx, [missile_id]       										; Load missile projectile ID
+	mov dx, missile_id       										; Load missile projectile ID
 
 @@load_active_slot:
     ; Load the next available slot in the active_projectiles array
@@ -363,19 +354,19 @@ proc animate_projectile
     mov si, [bp + 4]       							; Load the pointer to the projectile's data
     mov dx, [si]          							; Load the projectile ID
 
-    cmp dx, [delete_projectile_id] 					; Check if the projectile is marked for deletion
+    cmp dx, delete_projectile_id 					; Check if the projectile is marked for deletion
     je @@delete										; Jump to deletion animation
 
-    cmp dx, [laser_id]     							; Check if the projectile is a laser
+    cmp dx, laser_id     							; Check if the projectile is a laser
     je @@laser										; Jump to laser animation
 
-    cmp dx, [missile_id]   							; Check if the projectile is a missile
+    cmp dx, missile_id   							; Check if the projectile is a missile
     je @@missile									; Jump to missile animation
 
     jmp @@exit        								; Skip to the end if no match found
 
 @@delete:
-    mov ax, [no_projectile_id] 						; Mark the projectile as inactive
+    mov ax, no_projectile_id 						; Mark the projectile as inactive
     mov [si], ax				   					; Update the projectile ID to inactive
     mov cx, offset delete_projectile_model			; Load the deletion model
     jmp @@animate             						; Proceed to animate the deletion
@@ -432,10 +423,10 @@ proc projectile_hit_check
     mov si, [bp + 4]       				; Load the pointer to the projectile's data
     mov dx, [si]           				; Load the projectile ID
 
-    cmp dx, [no_projectile_id]			; Check if the projectile id is not active
+    cmp dx, no_projectile_id			; Check if the projectile id is not active
     je @@exit							; Exit if not active
 
-    cmp dx, [delete_projectile_id]		; Check if the projectile id is marked for deletion
+    cmp dx, delete_projectile_id		; Check if the projectile id is marked for deletion
     je @@exit							; Exit if marked for deletion
 
 @@check_ceiling:
@@ -444,12 +435,13 @@ proc projectile_hit_check
     ja @@exit       					; If below the ceiling, skip
 
 	; Mark the projectile for deletion
-    mov dx, [delete_projectile_id]		; Load delete projectile ID
+    mov dx, delete_projectile_id		; Load delete projectile ID
     mov [si], dx						; Update the projectile ID to mark for deletion
 
     ; Penalize score if the projectile missed
     cmp [score], 0						; Check if score is 0 or negative
     jbe @@exit      					; Skip if score is already 0 or negative
+
     mov dx, [missed_shot_score_penalty] ; Load the penalty value
     sub [score], dx        				; Deduct penalty from score
 
@@ -485,10 +477,10 @@ proc enemy_hit_check
     mov di, [bp + 4]				; Load the pointer to the projectile's data
     mov dx, [di]					; Load the projectile ID
 
-    cmp dx, [no_projectile_id]		; Check if the projectile id is not active
+    cmp dx, no_projectile_id		; Check if the projectile id is not active
     je @@exit						; Exit if not active
 
-    cmp dx, [delete_projectile_id]	; Check if the projectile id is marked for deletion
+    cmp dx, delete_projectile_id	; Check if the projectile id is marked for deletion
     je @@exit						; Exit if marked for deletion
 
 	mov si, offset active_enemies	; Start of the `active_enemies` array
@@ -496,10 +488,10 @@ proc enemy_hit_check
 @@enemy_loop:
 	mov dx, [si]					; Load current enemy's Status
 
-	cmp dx, [inactive_enemy_id]		; If current enemy's Status == inactive, skip it
+	cmp dx, inactive_enemy_id		; If current enemy's Status == inactive, skip it
 	je @@next_enemy                 ; Jump to advance to the next slot
 
-	cmp dx, [delete_enemy_id]       ; If current enemy's Status == inactive, skip it
+	cmp dx, delete_enemy_id       	; If current enemy's Status == delete, skip it
 	je @@next_enemy                 ; Jump to advance to the next slot
 
 @@check_x:
@@ -524,10 +516,10 @@ proc enemy_hit_check
 	ja @@next_enemy                 ; If projectile Y > enemy bottom boundary, go to next enemy
 
 @@hit:
-	mov dx, [delete_projectile_id]	; Load delete projectile ID
+	mov dx, delete_projectile_id	; Load delete projectile ID
 	mov [di], dx					; Mark projectile for deletion
 
-	mov dx, [delete_enemy_id]		; Load delete enemy ID
+	mov dx, delete_enemy_id			; Load delete enemy ID
 	mov [si], dx					; Mark enemy for deletion
 
 	inc [dead_count]				; Increment dead enemy count
@@ -619,10 +611,10 @@ proc enemies_direction_handler
 @@enemy_loop:
 	mov dx, [si]                     ; Load current enemy's Status
 
-	cmp dx, [inactive_enemy_id]      ; If current enemy's Status == inactive, skip it
+	cmp dx, inactive_enemy_id		 ; If current enemy's Status == inactive, skip it
 	je @@next_enemy                  ; Jump to advance to the next slot
 
-	cmp dx, [delete_enemy_id]		 ; If current enemy's Status == delete, skip it
+	cmp dx, delete_enemy_id			 ; If current enemy's Status == delete, skip it
 	je @@next_enemy                  ; Jump to advance to the next slot
 
 @@check_floor:
@@ -693,13 +685,13 @@ proc enemies_animation_handler
 @@enemy_loop:
 	mov dx, [si]                     	; Load current enemy's Status
 
-	cmp dx, [inactive_enemy_id]      	; If current enemy's Status == inactive, skip it
+	cmp dx, inactive_enemy_id      		; If current enemy's Status == inactive, skip it
 	je @@next_enemy                 	; Jump to advance to the next slot
 
-	cmp dx, [delete_enemy_id]		  	; If current enemy's Status == delete
+	cmp dx, delete_enemy_id		  		; If current enemy's Status == delete
 	jne @@active_enemy_checks
 
-	mov dx, [inactive_enemy_id]		  	; Load delete enemy ID for comparison
+	mov dx, inactive_enemy_id		  	; Load delete enemy ID for comparison
 	mov [si], dx						; Ensure enemy is marked as deleted
 	mov cx, offset delete_enemy_model	; Pointer to delete enemy model
 	jmp @@animate
@@ -1104,6 +1096,60 @@ proc spaceship_movement_handler
 endp spaceship_movement_handler
 
 
+proc play_end_sound
+;--------------------------------------------------------
+; Purpose:
+;				Play an end-game sound sequence.
+; Inputs:
+;             	None.
+; Behavior:   
+;             	- Plays a sequence of musical notes to signify the end of the game.
+; Outputs:
+;             	- The end-game sound sequence is played.
+;--------------------------------------------------------
+    push bp						; Save the base pointer
+
+    mov bp, 1					; Initialize note counter
+
+@@play_loop:
+    cmp bp, 1					; Check for first note
+    jne @@check_second_note		; If not first note, check second note
+
+	push 1436h					; Pass frequency for first note
+	call play_note				; Play the note
+	inc bp						; Increment note counter
+	jmp @@play_loop        		; Loop to next note
+
+@@check_second_note:
+    cmp bp, 2					; Check for second note
+	jne @@check_third_note		; If not second note, check third note
+
+	push 1917h					; Pass frequency for second note
+	call play_note				; Play the note
+	inc bp						; Increment note counter
+	jmp @@play_loop        		; Loop to next note
+
+@@check_third_note:
+	cmp bp, 3					; Check for third note
+	jne @@check_fourth_note		; If not third note, check fourth note
+
+	push 2873h					; Pass frequency for third note
+	call play_note				; Play the note
+	inc bp						; Increment note counter
+	jmp @@play_loop        		; Loop to next note
+
+@@check_fourth_note:
+	cmp bp, 4					; Check for fourth note
+	jne @@exit					; If not fourth note, exit
+
+	push 2559h					; Pass frequency for fourth note
+	call play_note				; Play the note
+
+@@exit:
+    pop bp                 		; Restore the base pointer
+    ret                   		; Clean up the stack and return
+endp play_end_sound
+
 
 start:
     mov ax, @data 										; Initialize data segment
@@ -1159,7 +1205,7 @@ win_screen:
 	push 709h											; Screen position
 	push 18												; Length of the message
 	call print_string									; Display game won message
-	jmp outO		
+	jmp end_game										; Proceed to end game
 
 check_enemy_reached_bottom:	
 	cmp [enemy_reached_bottom], 1						; Check if any enemy reached the bottom
@@ -1170,53 +1216,12 @@ lose_screen:
 	push 709h											; Screen position
 	push 19												; Length of the message
 	call print_string									; Display game lost message
-	jmp outO
+	jmp end_game										; Proceed to end game
 
-outO:
-	mov ah,2ch
-    int 21h
-    cmp [stop],dl
-    je outO
+end_game:
+	call play_end_sound									; Play end-game sound sequence
 
-	cmp [cn],1
-	je firstnote
-	cmp [cn],2
-	je secendnote
-	cmp [cn],3
-	je thrednote
-	cmp [cn],4
-	je  fournote
-	jmp endsound
-firstnote:
-	push [note1]
-	jmp callsound
-secendnote:
-	push [note2]
-	jmp callsound
-thrednote:
-	push [note3]
-	jmp callsound
-fournote:
-	push [note4]
-	jmp callsound
-callsound:
-	call play_note
-	inc [cn]
-endsound:
-	mov ah,2ch
-    int 21h
-    mov [stop],dl
+    mov ax, 4c00h										; Terminate program
+    int 21h												; DOS interrupt to terminate program
 
-	mov ah, 1
-    int 16h ;checking for input
-    jz outO ;no input:looping
-
-    mov ah, 0 ;saving the input
-    int 16h
-	cmp al, 'p';checking for pause
-	je exit ; F
-	jmp outO
-exit:
-    mov ax, 4c00h
-    int 21h
-    END start
+END start
